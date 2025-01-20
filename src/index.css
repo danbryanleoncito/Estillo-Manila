@@ -1,0 +1,223 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Tagalog&display=swap');
+
+*{
+  font-family: "Inter", sans-serif;
+}
+
+h1{
+  font-weight: 700;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+.error{
+  min-height: 58vh;
+}
+.carousel{
+  border-bottom: 1px solid black;
+}
+.carousel-item {
+  height: 60vh;
+}
+.carousel-caption{
+  left: 1 !important;
+  top: 40%;
+  text-align: left !important;
+}
+.carousel-caption h1{
+  font-size: 5rem;
+}
+.carousel-caption p{
+  font-size: 1.2rem;
+}
+#user-icon{
+  font-size: 1.5rem;
+}
+.navbar {
+  font-size: 1rem !important;
+  font-weight: 600;
+  border-bottom: 1px solid black;
+}
+.nav-link, .dropdown-item{
+  padding-right: .7rem !important;
+  padding-left: .7rem !important;
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.3rem !important;
+  margin: 0 0.5rem;
+  color: rgb(107, 107, 107) !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+}
+.nav-link:hover, .dropdown-item:hover, nav-link:active, .dropdown-item:active{
+  color: black !important;
+  background: none !important;
+}
+.dropdown-menu{
+  background: white !important;
+  border: 1px solid black !important;
+  border-radius: 0 !important;
+  padding-left: 0.7rem !important;
+  padding-right: 0.7rem !important;
+  font-size: 1.2rem !important;
+}
+.card{
+  border: 1px solid black !important;
+  border-radius: none !important;
+  min-height: 30rem !important;
+  background-position: center;
+  background-size: cover;
+  transition: ease-in-out 0.2s !important;
+}
+.card:hover{
+  cursor: pointer;
+  transform: scale(1.03);
+  z-index: 1;
+}
+.card-product {
+  min-height: 40rem !important;
+}
+.card-product:hover{
+  cursor: pointer;
+  transform: scale(1);
+}
+.card-product img {
+  object-fit: cover;
+}
+.card-title{
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 2.5rem !important;
+}
+.card-text{
+  font-size: 1.3rem !important;
+}
+
+.footer{
+  border-top: 1px solid black;
+  margin-top: 10px;
+  position: absolute;
+}
+.footer p {
+  font-size: 12px;
+  font-weight: 500;
+}
+.footer-list{
+  list-style: none;
+}
+.product-details{
+  border: 1px solid black;
+  min-height: 30rem !important;
+}
+.add-to-cart{
+  bottom: 2rem;
+  right: 2rem;
+}
+.quantity{
+  width: 4rem !important;
+  bottom: 2rem;
+  left: 2rem;
+  border-radius: none !important;
+  border: 1px solid black !important;
+}
+.quantity-label{
+  bottom: 4.5rem;
+  left: 2rem;
+}
+.banner{
+  border-top: 1px solid black;
+  border-bottom: 1px solid black;
+  height: 30rem !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.banner h1 {
+  font-size: 5rem !important;
+  line-height: 55px !important;
+}
+.banner span{
+  font-family: "Noto Sans Tagalog", sans-serif;
+}
+.banner p {
+  font-size: 1.2rem !important;
+}
+.details {
+  border-right: 1px solid black;
+  border-left: 1px solid black;
+}
+.details:nth-child(1), .details:nth-child(2), .details:nth-child(3){
+  border-right: none !important;
+}
+.active {
+  background: none !important;
+  color: black !important;
+}
+table .form-control, table .form-select, table .input-group-text{
+  border: none !important;
+  background: none !important;
+}
+table .input-group-text {
+  padding-right: 0 !important;
+}
+table .form-check-input:checked{
+  background-color: black !important;
+  border: 1px solid black !important;
+}
+table {
+  background: none !important;
+}
+.cart-description{
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 53vw;
+}
+.profile-card{
+  width: 30vw;
+  border-radius: 15px;
+  background-size: cover !important;
+  border: 15px #e5e5e5 solid;
+  background: linear-gradient(#333, #242d34);
+  box-shadow: 4px 0px 58px -3px rgba(0,0,0,0.89);
+  -webkit-box-shadow: 4px 0px 58px -3px rgba(0,0,0,0.89);
+  -moz-box-shadow: 4px 0px 58px -3px rgba(0,0,0,0.89);
+}
+.profile-card:hover{
+  cursor: pointer;
+}
+.profile-image{
+  border-radius: 15px;
+  border: 5px #e5e5e5 solid;
+}
+.svg-icon {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.svg-icon path,
+.svg-icon polygon,
+.svg-icon rect {
+  fill: #000;
+}
+
+.svg-icon circle {
+  stroke: #000;
+  stroke-width: 1;
+}
