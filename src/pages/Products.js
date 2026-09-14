@@ -9,8 +9,14 @@ export default function Products() {
     fetch(`${process.env.REACT_APP_API_BASE_URL}/product/active`)
       .then((res) => res.json())
       .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) {
+          setProducts([]);
+          return;
+        }
+
         const numbers = [];
         const featured = [];
+        const featuredCount = Math.min(3, data.length);
 
         const generateRandomNums = () => {
           let randomNum = Math.floor(Math.random() * data.length);
@@ -22,15 +28,12 @@ export default function Products() {
           }
         };
 
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < featuredCount; i++) {
           generateRandomNums();
 
           featured.push(
-            <Col>
-              <PreviewProducts
-                data={data[numbers[i]]}
-                key={data[numbers[i]]._id}
-              />
+            <Col key={data[numbers[i]]._id}>
+              <PreviewProducts data={data[numbers[i]]} />
             </Col>
           );
         }
