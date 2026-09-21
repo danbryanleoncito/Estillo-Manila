@@ -28,7 +28,7 @@ export default function ProfileView() {
         setImage(data.image);
         console.log(data);
       });
-  });
+  }, []);
 
   useEffect(() => {
     fetch(`${process.env.REACT_APP_API_BASE_URL}/order/my-orders`, {
@@ -38,10 +38,10 @@ export default function ProfileView() {
     })
       .then((res) => res.json())
       .then((data) => {
-        setOrders(data.orders);
+        setOrders(data.orders || []);
         console.log(data.orders);
       });
-  });
+  }, []);
 
   return (
     <Container className="my-5 py-5">
