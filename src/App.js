@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./context/UserContext";
 import NavigationBar from "./components/AppNavbar";
@@ -27,6 +27,28 @@ function App() {
   function unsetUser() {
     localStorage.clear();
   }
+
+  // Rehydrate the logged-in state from a token already in localStorage (e.g. after a
+  // page refresh) — without this, `user` always starts as {id: null, isAdmin: null}
+  // and every refresh looks logged out even though the token is still valid.
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    fetch(`${process.env.REACT_APP_API_BASE_URL}/users/details`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data._id) {
+          setUser({ id: data._id, isAdmin: data.isAdmin });
+        } else {
+          localStorage.clear();
+        }
+      })
+      .catch(() => localStorage.clear());
+  }, []);
+
   return (
     <>
       <UserProvider value={{ user, setUser, unsetUser }}>
