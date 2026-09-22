@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Button, Table } from "react-bootstrap";
+import { Container, Button, Table, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
 export default function AppOrder() {
@@ -40,6 +40,7 @@ export default function AppOrder() {
             <th className="text-center">Customer Name</th>
             <th className="text-center">Products</th>
             <th className="text-center">Status</th>
+            <th className="text-center">Payment</th>
             <th className="text-center">Total Price</th>
           </tr>
         </thead>
@@ -56,6 +57,21 @@ export default function AppOrder() {
                   })}
                 </td>
                 <td>{order.status}</td>
+                <td>
+                  <Badge
+                    bg={
+                      order.paymentStatus === "Paid"
+                        ? "success"
+                        : order.paymentStatus === "Failed"
+                        ? "danger"
+                        : order.paymentStatus === "COD"
+                        ? "secondary"
+                        : "warning"
+                    }
+                  >
+                    {order.paymentStatus || "Unpaid"}
+                  </Badge>
+                </td>
                 <td>&#x20B1;{order.totalPrice}</td>
               </tr>
             );
