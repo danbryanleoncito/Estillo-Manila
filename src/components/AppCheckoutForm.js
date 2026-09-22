@@ -1,10 +1,10 @@
 import React from "react";
-import { Form, Button, Col, Row, Container } from "react-bootstrap";
+import { Form, Col, Row, Container } from "react-bootstrap";
 
 const AppCheckoutForm = () => {
   return (
     <Container className="my-5 py-5">
-      <Form>
+      <fieldset className="border-0 p-0">
         {/* Contact Section */}
         <h4>Contact</h4>
         <Form.Group controlId="formEmail">
@@ -83,11 +83,7 @@ const AppCheckoutForm = () => {
           type="checkbox"
           label="Save this information for next time"
         />
-
-        <Button variant="primary" type="submit">
-          Submit
-        </Button>
-      </Form>
+      </fieldset>
     </Container>
   );
 };

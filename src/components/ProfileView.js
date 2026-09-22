@@ -1,7 +1,7 @@
 import { useEffect, useContext, useState } from "react";
 import { Container, Row, Col } from "react-bootstrap";
 import { Image } from "react-bootstrap";
-import { Card, CardText, CardTitle, CardBody, Table } from "react-bootstrap";
+import { Card, CardText, CardTitle, CardBody, Table, Badge } from "react-bootstrap";
 import UserContext from "../context/UserContext";
 import { Navigate } from "react-router-dom";
 
@@ -81,6 +81,7 @@ export default function ProfileView() {
               <th className="text-center">Customer Name</th>
               <th className="text-center">Products</th>
               <th className="text-center">Status</th>
+              <th className="text-center">Payment</th>
               <th className="text-center">Total Price</th>
             </tr>
           </thead>
@@ -99,6 +100,21 @@ export default function ProfileView() {
                     })}
                   </td>
                   <td>{order.status}</td>
+                  <td>
+                    <Badge
+                      bg={
+                        order.paymentStatus === "Paid"
+                          ? "success"
+                          : order.paymentStatus === "Failed"
+                          ? "danger"
+                          : order.paymentStatus === "COD"
+                          ? "secondary"
+                          : "warning"
+                      }
+                    >
+                      {order.paymentStatus || "Unpaid"}
+                    </Badge>
+                  </td>
                   <td>&#x20B1;{order.totalPrice}</td>
                 </tr>
               );

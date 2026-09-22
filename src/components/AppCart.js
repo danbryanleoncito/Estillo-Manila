@@ -1,5 +1,5 @@
 import Table from "react-bootstrap/Table";
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button } from "react-bootstrap";
 import QuantitySelector from "./QuantitySelector";
@@ -8,36 +8,21 @@ import Image from "react-bootstrap/Image";
 // import { TbMoodEmpty } from "react-icons/tb";
 import { Container, Row, Col } from "react-bootstrap";
 import { Notyf } from "notyf";
-import UserContext from "../context/UserContext";
 
 export default function AppCart() {
   const [cart, setCart] = useState([]);
   const [prodId, setProdId] = useState("");
   const [totalPrice, setTotalPrice] = useState(0);
-  const { userId } = useContext(UserContext);
   const notyf = new Notyf();
   const navigate = useNavigate();
 
-  function checkoutOrder(e) {
+  function goToCheckout(e) {
     e.preventDefault();
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/order/checkout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        userId: userId,
-        productsOrdered: cart,
-        totalPrice: totalPrice,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        navigate("/profile");
-        notyf.success("Ordered successfully!");
-      });
+    if (!cart || cart.length === 0) {
+      notyf.error("Your cart is empty");
+      return;
+    }
+    navigate("/checkout");
   }
 
   function clearCart(e) {
@@ -186,7 +171,7 @@ export default function AppCart() {
                   </Form>
                 </td>
                 <td>
-                  <Form onSubmit={checkoutOrder}>
+                  <Form onSubmit={goToCheckout}>
                     <Button type="submit" variant="outline-dark">
                       Checkout
                     </Button>
