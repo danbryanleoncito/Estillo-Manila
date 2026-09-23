@@ -1,4 +1,5 @@
 import { Container, Row, Col } from "react-bootstrap";
+import { Link } from "react-router-dom";
 export default function Footer() {
   return (
     <Container className="footer p-5 border-top-1" fluid>
@@ -23,11 +24,21 @@ export default function Footer() {
         <Col lg={6} className="text-end">
           <h6>CUSTOMER CARE</h6>
           <ul className="footer-list">
-            <li>Home</li>
-            <li>Products</li>
-            <li>Login</li>
-            <li>Register</li>
-            <li>Email Us</li>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+              <Link to="/product">Products</Link>
+            </li>
+            <li>
+              <Link to="/login">Login</Link>
+            </li>
+            <li>
+              <Link to="/register">Register</Link>
+            </li>
+            <li>
+              <a href="mailto:support@estilomanila.com">Email Us</a>
+            </li>
           </ul>
         </Col>
       </Row>
