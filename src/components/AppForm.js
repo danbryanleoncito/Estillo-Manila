@@ -1,14 +1,13 @@
 import { Container, Row, Col, InputGroup, Form, Button } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Notyf } from "notyf";
+import { notyf } from "../utils/notify";
 import { useNavigate } from "react-router-dom";
 
 
 console.log("Sending request to:", `${process.env.REACT_APP_API_BASE_URL}/users/register`);
 
 export default function AppForm() {
-  const notyf = new Notyf();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");

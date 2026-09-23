@@ -12,7 +12,9 @@ import {
   FormControl,
 } from "react-bootstrap";
 import Card from "react-bootstrap/Card";
-import { Notyf } from "notyf";
+import { notyf, toastError } from "../utils/notify";
+import { api } from "../utils/api";
+import { useCart } from "../context/CartContext";
 
 export default function ProductsView() {
   const { user } = useContext(UserContext);
@@ -22,42 +24,35 @@ export default function ProductsView() {
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [description, setDescription] = useState("");
-  const notyf = new Notyf();
+  const { addToCart: addLineToCart } = useCart();
 
-  function addToCart(e) {
+  async function addToCart(e) {
     e.preventDefault();
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/cart/add-to-cart`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        productId: productId,
-        quantity: quantity,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        notyf.success("Added To Cart Successfully!");
-        console.log(data);
-      });
+    try {
+      await addLineToCart(productId, Number(quantity));
+      notyf.success("Added To Cart Successfully!");
+    } catch (err) {
+      // e.g. 409 "Only 3 of X available": show the server's message, not a success toast.
+      toastError(err);
+    }
   }
 
-  function handleKeyDown(e) {
-    e.preventDefault();
-  }
-
+  // Load once per product. This used to have no dependency array, so it refetched on every render.
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/product/${productId}`)
-      .then((res) => res.json())
+    let cancelled = false;
+    api(`/product/${productId}`, { auth: false })
       .then((data) => {
+        if (cancelled || !data) return;
         setName(data.name);
         setDescription(data.description);
         setPrice(data.price);
         setImage(data.image);
-      });
-  });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
 
   return (
     <Container className="my-5">
@@ -88,8 +83,6 @@ export default function ProductsView() {
                 className="position-absolute quantity"
                 value={quantity}
                 min={1}
-                pattern="[0-9]"
-                onKeyDown={handleKeyDown}
                 onChange={(e) => setQuantity(e.target.value)}
               />
               <Button

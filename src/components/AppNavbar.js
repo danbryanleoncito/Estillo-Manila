@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useContext } from "react";
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
@@ -7,29 +7,12 @@ import NavDropdown from "react-bootstrap/NavDropdown";
 // import { RiShoppingBagLine } from "react-icons/ri";
 import { NavLink } from "react-router-dom";
 import UserContext from "../context/UserContext";
+import { useCart } from "../context/CartContext";
 import { Badge } from "react-bootstrap";
 
 export default function NavigationBar() {
   const { user } = useContext(UserContext);
-  const [cartNumber, setCartNumber] = useState(0);
-
-  async function getNumberCart() {
-    if (user.id !== null && !typeof cartNumber === "undefined") {
-      await fetch(`${process.env.REACT_APP_API_BASE_URL}/cart/get-cart`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setCartNumber(data.cartItems.length);
-        });
-    }
-  }
-
-  useEffect(() => {
-    getNumberCart();
-  });
+  const { count } = useCart();
 
   return (
     <Navbar expand="lg" className="bg-body-tertiary">
@@ -67,7 +50,7 @@ export default function NavigationBar() {
                   </svg>
                   <sup>
                     <Badge pill bg="dark">
-                      {typeof cartNumber !== "undefined" ? cartNumber : 0}
+                      {count}
                     </Badge>
                   </sup>
                 </Nav.Link>

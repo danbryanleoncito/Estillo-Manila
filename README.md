@@ -52,6 +52,11 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
+### v0.3.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** A shared API helper that keeps the server's error details (such as stock conflicts), a shared cart that keeps the navbar badge and cart page in sync, route guards for the cart, checkout, profile and admin pages, and tests for them.
+- **Fixed:** The cart, search and admin-orders pages no longer refetch endlessly; the navbar cart badge works; server errors (like "Only 3 available") are shown instead of a success message; the quantity control stops at the available stock; refreshing `/admin` keeps you on the page; search waits until you stop typing.
+
 ### v0.2.1 (2026-09-22)
 _Integrated by Dan Leoncito._
 - **Fixed:** Refreshing the page logged you out. The login state is now restored from the saved token when the app loads.

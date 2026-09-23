@@ -2,6 +2,41 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.3.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- `utils/api.js`: one `api()` helper for every backend call. Failures become an `ApiError` that
+  keeps the HTTP status and the response body (so a stock `409 { outOfStock, available }` is no
+  longer lost), understands all the backend's error shapes, and lets endpoints where 404 means
+  "nothing yet" (cart, orders, search) return an empty value.
+- `context/CartContext.js`: the cart is fetched once and refreshed after every change, replacing
+  the per-page fetching. The navbar cart badge now shows the number of units in the cart.
+- Route guards (`RequireAuth` / `RequireAdmin`) on `/cart`, `/checkout`, `/profile`,
+  `/admin` and `/admin/orders`. They wait for the saved login to be restored before deciding.
+- `utils/stock.js` (mirrors the backend's min(stock, 99) limit and the "low stock" threshold), a
+  shared `Notyf` instance, and tests for the API helper, stock helpers and route guards.
+
+### Fixed
+- The cart page, product search page and admin orders page refetched endlessly (an effect with no
+  dependency array), and the product page refetched on every render. Each now loads once.
+- Every screen created a new `Notyf` on each render, leaking DOM nodes; they now share one.
+- The navbar cart badge was permanently 0 (a broken `!typeof` check).
+- Adding to the cart showed "Added To Cart Successfully!" even when the server refused (for example
+  "Only 3 available"); it now shows the server's message.
+- The quantity control had no upper limit, submitted the form from its +/- buttons, never re-synced
+  with the server and toasted success on failure. It now stops at the available stock, reverts a
+  refused change, and follows the server's quantity.
+- The product quantity field blocked every key press, so it could not be typed into.
+- Refreshing `/admin` sent the admin back to the home page (the redirect ran before the saved login
+  was restored), and `/profile`'s "logged out" check was always true.
+- Searching sent a request for every key press (including Shift and arrows) and errored on
+  characters like `(`; it now waits 300 ms after typing, ignores stale responses, and treats
+  "no results" as empty rather than an error.
+- The cart's Remove button had no label (its icon was commented out), and logging out cleared
+  storage during render.
+- A network hiccup while restoring the login no longer logs the user out; only a rejected token does.
+
 ## [0.2.1] - 2026-09-22
 _Integrated by Dan Leoncito._
 

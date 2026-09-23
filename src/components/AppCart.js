@@ -1,20 +1,18 @@
 import Table from "react-bootstrap/Table";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button } from "react-bootstrap";
 import QuantitySelector from "./QuantitySelector";
 import Image from "react-bootstrap/Image";
-// import { CiTrash } from "react-icons/ci";
-// import { TbMoodEmpty } from "react-icons/tb";
 import { Container, Row, Col } from "react-bootstrap";
-import { Notyf } from "notyf";
+import { notyf, toastError } from "../utils/notify";
+import { useCart } from "../context/CartContext";
 
 export default function AppCart() {
-  const [cart, setCart] = useState([]);
-  const [prodId, setProdId] = useState("");
-  const [totalPrice, setTotalPrice] = useState(0);
-  const notyf = new Notyf();
   const navigate = useNavigate();
+  // The cart lives in CartContext (fetched once, refreshed after every change). This page
+  // used to refetch on every render, which never stopped.
+  const { lines: cart, totalPrice, clearCart, removeItem } = useCart();
 
   function goToCheckout(e) {
     e.preventDefault();
@@ -25,62 +23,26 @@ export default function AppCart() {
     navigate("/checkout");
   }
 
-  function clearCart(e) {
+  async function handleClear(e) {
     e.preventDefault();
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/cart/clear-cart`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        notyf.success("Cleared cart successfully!");
-      });
-  }
-
-  function deleteItemFromCart(e) {
-    e.preventDefault();
-    fetch(
-      `${process.env.REACT_APP_API_BASE_URL}/cart/${prodId}/remove-from-cart`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          productId: prodId,
-        }),
-      }
-    )
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        notyf.success("Deleted item successfully!");
-      });
-  }
-  function fetchCart() {
-    console.log(cart);
-    if (typeof cart !== "undefined") {
-      fetch(`${process.env.REACT_APP_API_BASE_URL}/cart/get-cart`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setCart(data.cartItems);
-          setTotalPrice(data.totalPrice);
-        })
-        .catch((err) => console.log(err));
+    try {
+      await clearCart();
+      notyf.success("Cleared cart successfully!");
+    } catch (err) {
+      toastError(err);
     }
   }
 
-  useEffect(() => {
-    fetchCart();
-  });
+  async function deleteItemFromCart(e, productId) {
+    e.preventDefault();
+    try {
+      await removeItem(productId);
+      notyf.success("Deleted item successfully!");
+    } catch (err) {
+      toastError(err);
+    }
+  }
+
   return (
     <Container>
       <Row>
@@ -119,7 +81,8 @@ export default function AppCart() {
                         <div className="mt-3">
                           <span>Quantity:</span>
                           <QuantitySelector
-                            propsValue={crt.quantity}
+                            quantity={crt.quantity}
+                            stock={crt.productId.stock}
                             productId={crt.productId._id}
                           />
                         </div>
@@ -127,14 +90,14 @@ export default function AppCart() {
                       <td id="price">&#x20B1;{crt.productId.price}</td>
                       <td id="subtotal">&#x20B1;{crt.subtotal}</td>
                       <td>
-                        <Form onSubmit={deleteItemFromCart}>
+                        <Form onSubmit={(e) => deleteItemFromCart(e, crt.productId._id)}>
                           <Button
                             type="submit"
-                            variant="light"
-                            className="btn btn-outline-danger mx-2"
-                            onClick={(e) => setProdId(crt.productId._id)}
+                            variant="outline-danger"
+                            size="sm"
+                            className="mx-2"
                           >
-                            {/*<CiTrash />*/}
+                            Remove
                           </Button>
                         </Form>
                       </td>
@@ -160,7 +123,7 @@ export default function AppCart() {
                   <h3 className="fw-bolder">TOTAL: &#x20B1;{totalPrice}</h3>
                 </td>
                 <td>
-                  <Form onSubmit={clearCart}>
+                  <Form onSubmit={handleClear}>
                     <Button
                       type="submit"
                       variant="outline-danger"

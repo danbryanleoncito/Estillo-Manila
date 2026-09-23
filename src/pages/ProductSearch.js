@@ -2,62 +2,74 @@ import { Col, Row, Container } from "react-bootstrap";
 import { Form, FormControl } from "react-bootstrap";
 import AppCard from "../components/Card";
 import { useEffect, useState } from "react";
-import { Notyf } from "notyf";
+import { api } from "../utils/api";
+import { toastError } from "../utils/notify";
 
 export default function ProductSearch() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState([]);
-  const notyf = new Notyf();
+  // null = not searching (show the full catalog); an array (possibly empty) = search results.
+  const [results, setResults] = useState(null);
 
-  function fetchProducts(e) {
-    e.preventDefault();
-
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/product/search-by-name`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: search,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        if (
-          data.message === "Invalid product name" ||
-          data.message === "No products found"
-        ) {
-          notyf.error("No products found");
-        }
-        setResults(data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
-  }
+  // Load the catalog once. This used to have no dependency array and looped forever.
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/product/active`)
-      .then((res) => res.json())
+    let cancelled = false;
+    api("/product/active", { auth: false, emptyOn404: [] })
       .then((data) => {
-        setProducts(data);
-      });
-  });
+        if (!cancelled) setProducts(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => !cancelled && toastError(err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Search as the user types, but wait 300 ms after the last keystroke and ignore stale
+  // responses (it used to fire a request per key press, including Shift and arrows).
+  useEffect(() => {
+    const term = search.trim();
+    if (!term) {
+      setResults(null);
+      return undefined;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const data = await api("/product/search-by-name", {
+          method: "POST",
+          auth: false,
+          // The server treats the term as a regex, so escape it (an unbalanced "(" would error).
+          body: { name: term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") },
+          emptyOn404: [],
+        });
+        if (!cancelled) setResults(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!cancelled) {
+          setResults([]);
+          toastError(err);
+        }
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [search]);
+
   const sortProducts = [...products].sort(
     (a, b) => new Date(b.createdOn) - new Date(a.createdOn)
   );
+  const shown = results !== null ? results : sortProducts;
 
   return (
     <Container className="my-5">
       <Row className="mt-5 mb-3">
         <Col>
           <h1 className="fw-bolder">Products</h1>
-          <Form onKeyUp={(e) => fetchProducts(e)}>
+          <Form onSubmit={(e) => e.preventDefault()}>
             <FormControl
               type="text"
               placeholder="Search"
-              defaultValue=""
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -65,29 +77,16 @@ export default function ProductSearch() {
         </Col>
       </Row>
       <Row className="d-flex">
-        {results.length > 0
-          ? results.map((product) => {
-              return (
-                <Col
-                  className="px-0 mx-auto flex-fill"
-                  md={4}
-                  key={product._id}
-                >
-                  <AppCard productProp={product} />
-                </Col>
-              );
-            })
-          : sortProducts.map((product) => {
-              return (
-                <Col
-                  className="px-0 mx-auto flex-fill"
-                  md={4}
-                  key={product._id}
-                >
-                  <AppCard productProp={product} />
-                </Col>
-              );
-            })}
+        {results !== null && results.length === 0 && (
+          <Col>
+            <p className="text-muted mt-4">No products found.</p>
+          </Col>
+        )}
+        {shown.map((product) => (
+          <Col className="px-0 mx-auto flex-fill" md={4} key={product._id}>
+            <AppCard productProp={product} />
+          </Col>
+        ))}
       </Row>
     </Container>
   );

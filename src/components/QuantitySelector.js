@@ -1,66 +1,83 @@
 // components/QuantitySelector.js
-import React, { useState } from "react";
-import { Form, Button, InputGroup, FormControl } from "react-bootstrap";
-import { Notyf } from "notyf";
+import React, { useEffect, useState } from "react";
+import { Button, InputGroup, FormControl } from "react-bootstrap";
+import { useCart } from "../context/CartContext";
+import { toastError } from "../utils/notify";
+import { maxPurchasable } from "../utils/stock";
 
-export default function QuantitySelector({ propsValue, productId }) {
-  const [quantity, setQuantity] = useState(propsValue);
-  const id = productId;
-  const notyf = new Notyf();
+// Quantity control for one cart line. `quantity` is what the server has; `stock` is the
+// product's current stock (from the populated cart). It never offers more than the server will
+// accept, and if a change is refused it snaps back to the server's quantity.
+export default function QuantitySelector({ productId, quantity, stock }) {
+  const { setQuantity, refreshCart } = useCart();
+  const [draft, setDraft] = useState(String(quantity));
+  const [busy, setBusy] = useState(false);
 
-  function addToCart(e) {
-    e.preventDefault();
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/cart/update-cart-quantity`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        productId: id,
-        quantity: quantity,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        notyf.success("Updated Cart Successfully!");
-        console.log(data);
-      });
+  // Follow the server: after any refetch (or a rejected change) show what is really in the cart.
+  useEffect(() => {
+    setDraft(String(quantity));
+  }, [quantity]);
+
+  const limit = maxPurchasable(stock);
+  // If stock ran out below what is already in the cart, allow reducing but never increasing.
+  const cap = limit > 0 ? limit : quantity;
+  const clamp = (n) => Math.max(1, Math.min(Math.floor(Number(n) || 1), cap));
+
+  async function commit(next) {
+    if (busy) return;
+    const n = clamp(next);
+    setDraft(String(n));
+    if (n === quantity) return;
+
+    setBusy(true);
+    try {
+      await setQuantity(productId, n);
+    } catch (err) {
+      toastError(err);
+      setDraft(String(quantity));
+      // The rejection usually means stock moved; pull the latest numbers.
+      refreshCart().catch(() => {});
+    } finally {
+      setBusy(false);
+    }
   }
 
-  const handleIncrement = () => {
-    setQuantity((prev) => prev + 1);
-  };
-  const handleDecrement = () =>
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-
   return (
-    <Form onSubmit={addToCart}>
-      <InputGroup
-        className="mt-2 quantity-selector"
-        style={{ maxWidth: "120px" }}
+    <InputGroup className="mt-2 quantity-selector" style={{ maxWidth: "140px" }}>
+      <Button
+        variant="outline-secondary"
+        type="button"
+        aria-label="Decrease quantity"
+        disabled={busy || quantity <= 1}
+        onClick={() => commit(quantity - 1)}
       >
-        <Button
-          variant="outline-secondary"
-          type="submit"
-          onClick={handleDecrement}
-        >
-          -
-        </Button>
-        <FormControl
-          type="number"
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
-          min="1"
-        />
-        <Button
-          variant="outline-secondary"
-          type="submit"
-          onClick={handleIncrement}
-        >
-          +
-        </Button>
-      </InputGroup>
-    </Form>
+        -
+      </Button>
+      <FormControl
+        type="number"
+        aria-label="Quantity"
+        value={draft}
+        min={1}
+        max={cap}
+        disabled={busy}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => commit(draft)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit(draft);
+          }
+        }}
+      />
+      <Button
+        variant="outline-secondary"
+        type="button"
+        aria-label="Increase quantity"
+        disabled={busy || quantity >= cap}
+        onClick={() => commit(quantity + 1)}
+      >
+        +
+      </Button>
+    </InputGroup>
   );
 }

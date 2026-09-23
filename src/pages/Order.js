@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Form, Button, Spinner, Container, Alert } from "react-bootstrap";
-import { Notyf } from "notyf";
+import { notyf } from "../utils/notify";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -84,7 +84,6 @@ function CheckoutFormInner({
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
-  const notyf = new Notyf();
   const isEmpty = cartLoaded && (!cart || cart.length === 0);
 
   async function handleSubmit(e) {
