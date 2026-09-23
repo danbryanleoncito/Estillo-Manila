@@ -53,10 +53,12 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
 ### v0.2.1 (2026-09-22)
+_Integrated by Dan Leoncito._
 - **Fixed:** Refreshing the page logged you out. The login state is now restored from the saved token when the app loads.
 - **Fixed:** The footer "Customer Care" links (Home, Products, Login, Register, Email Us) were plain text and did nothing. They now navigate, and Email Us opens a `mailto:` link (placeholder address).
 
 ### v0.2.0 (2026-09-22)
+_Integrated by Dan Leoncito._
 - **Added:** Stripe test-mode card checkout alongside Cash on Delivery on a single `/checkout` page, plus Payment badges on the order tables.
 - **Fixed:** The cart's Checkout button used to place an order in place and skip the checkout page; it now goes to `/checkout`.
 - **Fixed:** The checkout page's submit buttons did nothing (or reloaded the page), and the Cash on Delivery radio never showed as selected.

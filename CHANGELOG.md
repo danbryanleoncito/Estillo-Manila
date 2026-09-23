@@ -3,6 +3,7 @@
 All notable changes to this frontend are documented in this file.
 
 ## [0.2.1] - 2026-09-22
+_Integrated by Dan Leoncito._
 
 ### Fixed
 - Refreshing the page logged the user out: `App.js` always started `user` as
@@ -14,6 +15,7 @@ All notable changes to this frontend are documented in this file.
   placeholder support address, since no real one exists in the project.
 
 ## [0.2.0] - 2026-09-22
+_Integrated by Dan Leoncito._
 
 ### Added
 - Wired the frontend to the backend's Stripe test-mode payment integration:
