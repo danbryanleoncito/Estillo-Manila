@@ -2,6 +2,17 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.2.1] - 2026-09-22
+
+### Fixed
+- Refreshing the page logged the user out: `App.js` always started `user` as
+  `{ id: null, isAdmin: null }` and never checked `localStorage` for an existing token, so the
+  app looked logged out even though the JWT was still valid. It now rehydrates `user` from
+  `/users/details` on load when a token is present (clearing the token if it is rejected).
+- The footer "Customer Care" items (Home, Products, Login, Register, Email Us) were bare `<li>`
+  text with no link. They now navigate to their routes; Email Us is a `mailto:` link using a
+  placeholder support address, since no real one exists in the project.
+
 ## [0.2.0] - 2026-09-22
 
 ### Added

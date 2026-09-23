@@ -1,8 +1,13 @@
-﻿# Capstone 3 Demo App Overview:
+# Capstone 3 Demo App Overview:
 ## Application Name: Estilo Manila – Web-based E-commerce application
+
+- Live site: https://estillo-manila.vercel.app
+- Backend API: https://estilo-manila-backend-v2.onrender.com (see the `estilo-manila-backend-v2` repo)
+
 ## Team Members:
 - Marc Aldous Conde
 - Dan Leoncito
+
 ## User Credentials:
 - Admin User
   - Email: admin@gmail.com
@@ -10,6 +15,53 @@
 - Dummy Customer:
   - Email: customer@gmail.com
   - Password: Customer123!
+
+## Tech Stack
+- React 18 (Create React App), react-router-dom v6, react-bootstrap, Notyf toasts
+- Stripe.js / `@stripe/react-stripe-js` for card payments (test mode)
+
+## Getting Started
+
+```bash
+npm install
+npm start        # dev server on http://localhost:3000
+npm test         # smoke test (App renders)
+npm run build    # production build
+```
+
+Create `frontend/.env` (it is gitignored):
+
+| Variable | Purpose |
+| --- | --- |
+| `REACT_APP_API_BASE_URL` | Backend base URL **including the `/b4` prefix**, e.g. `http://localhost:3004/b4` |
+| `REACT_APP_STRIPE_PUBLISHABLE_KEY` | Stripe **test-mode** publishable key (`pk_test_...`). Safe to expose in the browser; never put a secret key here |
+
+Create React App bakes `REACT_APP_*` values in at **build time**. After changing one (locally or in Vercel's environment settings) you must restart `npm start` or redeploy for it to take effect.
+
+## Checkout & Payments
+
+- The cart's **Checkout** button goes to `/checkout`, the single place orders are placed (it refuses an empty cart).
+- Pick **Cash on Delivery** (order saved as `COD`) or **Card**.
+- Card payments use Stripe's card field and confirm inline. If the bank requires 3D Secure it appears as a popup on the page, with no redirect.
+- The submit button is disabled with a spinner while a payment is processing, so it cannot be double-submitted. A declined card shows an error toast and leaves you on the page to retry.
+- Order tables on the Profile page and the admin Orders page show a colored **Payment** badge: green Paid, grey COD, red Failed, amber Unpaid.
+- The shipping and contact fields on the checkout page are currently display only; the backend does not store an address yet.
+- Test cards: `4242 4242 4242 4242` (success), `4000 0027 6000 3184` (3D Secure), `4000 0000 0000 0002` (declined). Use any future expiry and any CVC. No real money is charged.
+
+## Patch Notes
+
+Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
+
+### v0.2.1 (2026-09-22)
+- **Fixed:** Refreshing the page logged you out. The login state is now restored from the saved token when the app loads.
+- **Fixed:** The footer "Customer Care" links (Home, Products, Login, Register, Email Us) were plain text and did nothing. They now navigate, and Email Us opens a `mailto:` link (placeholder address).
+
+### v0.2.0 (2026-09-22)
+- **Added:** Stripe test-mode card checkout alongside Cash on Delivery on a single `/checkout` page, plus Payment badges on the order tables.
+- **Fixed:** The cart's Checkout button used to place an order in place and skip the checkout page; it now goes to `/checkout`.
+- **Fixed:** The checkout page's submit buttons did nothing (or reloaded the page), and the Cash on Delivery radio never showed as selected.
+- **Fixed:** Replaced the leftover Create React App boilerplate test with a real App smoke test.
+
 ## Features:
 ## Features by Marc Aldous Conde
 - Front-End Development
@@ -29,3 +81,4 @@
   - Register Page
   - Login Page
   - Cart Page
+  - Checkout Page (card via Stripe, or Cash on Delivery)
