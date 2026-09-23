@@ -52,6 +52,11 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
+### v0.5.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** Readable orders (names, quantities, prices, per-line status, refunds) for customers and admins, and shortfall disputes: a banner and Resolve dialog where a customer cancels an item or keeps fewer, with a live refund preview.
+- **Fixed:** Order tables no longer show raw ids or break on empty or unexpected responses.
+
 ### v0.4.0 (2026-09-24)
 _Integrated by Dan Leoncito._
 - **Added:** Stock across the storefront: Sold out and Only N left badges, a quantity limit on the product page, stock-aware cart lines with one-click fixes, a clear list of unavailable items at checkout, a safe "Finish my order" retry after a successful charge, and a Stock column and field for admins.

@@ -2,6 +2,27 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.5.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- Orders now show product names, quantity, price per item and a status per line (Fulfilled,
+  Needs your decision, Quantity adjusted, Cancelled) instead of raw product ids. Orders placed
+  before names were stored look the name up from the product. Shows how much was refunded.
+- Shortfall disputes: when a paid item was only partly in stock, Profile shows a banner with the
+  deadline and a **Resolve** button. The dialog lets the customer cancel the item or keep fewer
+  than were held, with a live preview of the refund. An already-resolved dispute refreshes the
+  page instead of erroring, and a refund that is still processing is reported as such.
+- Admin orders show the same lines and an **Open dispute** badge (view only; only the customer
+  can resolve).
+- The notice sent by checkout when an order opens a dispute is shown (and can be dismissed).
+
+### Fixed
+- The order tables showed the customer id and raw product ids, crashed on unexpected responses,
+  and repeated the payment badge logic; they now share one set of badges and load safely (no
+  orders yet is an empty state, newest first).
+- A lint error in the ProductCard test.
+
 ## [0.4.0] - 2026-09-24
 _Integrated by Dan Leoncito._
 

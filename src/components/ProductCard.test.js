@@ -26,6 +26,8 @@ test("5 or fewer shows an 'Only N left' badge", () => {
 test("0 stock shows a Sold out badge and dims the card, but stays a link", () => {
   const { container } = renderCard({ stock: 0 });
   expect(screen.getByText("Sold out")).toBeInTheDocument();
+  // The dimming is a CSS class with no role or text to query, so this one check needs the DOM.
+  // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
   expect(container.querySelector(".card-sold-out")).not.toBeNull();
   expect(screen.getByRole("link")).toHaveAttribute("href", "/product/p1");
 });
