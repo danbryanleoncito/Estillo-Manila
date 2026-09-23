@@ -11,10 +11,14 @@ const CartContext = createContext(null);
 export function CartProvider({ children }) {
   const { user } = useContext(UserContext);
   const [cart, setCart] = useState(null);
+  // False until the first cart fetch has finished (successfully or not), so pages can tell
+  // "still loading" apart from "empty".
+  const [loaded, setLoaded] = useState(false);
 
   const refreshCart = useCallback(async () => {
     if (!localStorage.getItem("token")) {
       setCart(null);
+      setLoaded(true);
       return null;
     }
     try {
@@ -28,10 +32,14 @@ export function CartProvider({ children }) {
         return null;
       }
       throw err;
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
   useEffect(() => {
+    // A different user means a different cart: forget the old one until the new one arrives.
+    setLoaded(false);
     if (user.id !== null) {
       refreshCart().catch(() => {});
     } else {
@@ -68,6 +76,7 @@ export function CartProvider({ children }) {
   const value = useMemo(
     () => ({
       cart,
+      loaded,
       lines,
       missingCount,
       count,
@@ -86,7 +95,7 @@ export function CartProvider({ children }) {
         mutate(`/cart/${productId}/remove-from-cart`, { method: "PATCH", body: { productId } }),
       clearCart: () => mutate("/cart/clear-cart", { method: "PUT" }),
     }),
-    [cart, lines, missingCount, count, totalPrice, quantityInCart, refreshCart, mutate]
+    [cart, loaded, lines, missingCount, count, totalPrice, quantityInCart, refreshCart, mutate]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

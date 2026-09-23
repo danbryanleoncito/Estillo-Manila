@@ -1,127 +1,104 @@
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
-import { Container, Form, FormControl, InputGroup } from "react-bootstrap";
+import { Badge, Container, Form, FormControl, InputGroup } from "react-bootstrap";
 import { useEffect, useState } from "react";
-// import { CiTrash } from "react-icons/ci";
 import Image from "react-bootstrap/Image";
-// import { FaCheck } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
-import { notyf } from "../utils/notify";
+import { notyf, toastError } from "../utils/notify";
+import { api } from "../utils/api";
+import { stockState } from "../utils/stock";
 import AddProductModal from "./AddProductModal";
+
+const EDITABLE = ["name", "description", "price", "image", "stock"];
+const NUMERIC = ["price", "stock"];
+
+// Only the fields the admin actually changed, with numbers converted. Sending the whole product
+// (as this page used to) would overwrite `stock` with the value from when the page loaded,
+// erasing every sale made since.
+export function changedFields(product, draft) {
+  const changes = {};
+  for (const field of EDITABLE) {
+    if (draft[field] === undefined) continue;
+    const before = String(product[field] ?? "");
+    if (String(draft[field]) === before) continue;
+    changes[field] = NUMERIC.includes(field) ? Number(draft[field]) : draft[field];
+  }
+  return changes;
+}
 
 function AppDashBoard() {
   const [products, setProducts] = useState([]);
-  const [availability, setAvailability] = useState(
-    products.reduce((isActive, switchObj) => {
-      isActive = switchObj.defaultChecked;
-      return isActive;
-    }, {})
-  );
+  // Edits in progress, per product id: { [id]: { name?, price?, stock?, ... } }.
+  const [drafts, setDrafts] = useState({});
+  const [busy, setBusy] = useState({});
   const navigate = useNavigate();
 
   const [showModal, setShowModal] = useState(false);
-
   const handleShow = () => setShowModal(true);
   const handleClose = () => setShowModal(false);
 
-  async function handleUpdate(e, id) {
-    e.preventDefault();
-    const updatedProduct = products.find((product) => product._id === id);
-    await fetch(`${process.env.REACT_APP_API_BASE_URL}/product/${id}/update`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify(updatedProduct),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        notyf.success(`Product updated successfully!`);
-      })
-      .catch((err) => {
-        console.log(err);
-        notyf.error("An error has encountered!");
-      });
-  }
-
-  function handleChange(id, e) {
-    const { name, description, price, image, value } = e.target;
-    const updatedProducts = products.map((product) =>
-      product._id === id
-        ? {
-            ...product,
-            [name]: value,
-            [description]: value,
-            [price]: value,
-            [image]: value,
-          }
-        : product
-    );
-    console.log(updatedProducts);
-    setProducts(updatedProducts);
-  }
-
-  const handleSwitchChange = (id) => (event) => {
-    const newValue = event.target.checked;
-    setAvailability({
-      isActive: newValue,
-    });
-
-    const updatedProduct = products.find((product) => product._id === id);
-    console.log(availability);
-    if (availability.isActive === false) {
-      fetch(`${process.env.REACT_APP_API_BASE_URL}/product/${id}/activate`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(updatedProduct),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-          notyf.success(`Product has been activated!`);
-        });
-    } else {
-      fetch(`${process.env.REACT_APP_API_BASE_URL}/product/${id}/archive`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify(updatedProduct),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-          notyf.success(`Product has been archived!`);
-        });
+  async function fetchProducts() {
+    try {
+      const data = await api("/product/all", { emptyOn404: [] });
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (err) {
+      toastError(err);
     }
-  };
+  }
 
-  function fetchProducts() {
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/product/all`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        setProducts(data);
-      })
-      .catch((err) => console.error("Failed to fetch products:", err));
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const valueOf = (product, field) =>
+    drafts[product._id] && drafts[product._id][field] !== undefined
+      ? drafts[product._id][field]
+      : product[field] ?? "";
+
+  function handleChange(id, field, value) {
+    setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  }
+
+  const setBusyFor = (id, value) => setBusy((prev) => ({ ...prev, [id]: value }));
+
+  async function handleUpdate(product) {
+    const changes = changedFields(product, drafts[product._id] || {});
+    if (Object.keys(changes).length === 0) return;
+    setBusyFor(product._id, true);
+    try {
+      await api(`/product/${product._id}/update`, { method: "PATCH", body: changes });
+      notyf.success("Product updated successfully!");
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[product._id];
+        return next;
+      });
+      await fetchProducts();
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setBusyFor(product._id, false);
+    }
+  }
+
+  async function handleSwitch(product, checked) {
+    setBusyFor(product._id, true);
+    try {
+      await api(`/product/${product._id}/${checked ? "activate" : "archive"}`, {
+        method: "PATCH",
+      });
+      notyf.success(checked ? "Product has been activated!" : "Product has been archived!");
+      await fetchProducts();
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setBusyFor(product._id, false);
+    }
   }
 
   const sortProducts = [...products].sort(
     (a, b) => new Date(b.createdOn) - new Date(a.createdOn)
   );
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   return (
     <>
@@ -133,9 +110,7 @@ function AppDashBoard() {
           <Button
             variant="light"
             className="btn btn-outline-dark me-3"
-            onClick={() => {
-              handleShow();
-            }}
+            onClick={handleShow}
           >
             Add New Product
           </Button>{" "}
@@ -148,119 +123,115 @@ function AppDashBoard() {
             Show User Orders
           </Button>{" "}
         </div>
-        <Form>
-          <Table className="mb-5" hover>
-            <thead>
-              <tr>
-                <th className="text-center">{}</th>
-                <th className="text-center">Name</th>
-                <th className="text-center">Description</th>
-                <th className="text-center">Price</th>
-                <th className="text-center">Image Link</th>
-                <th className="text-center">Availability</th>
-                <th className="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortProducts.map((product) => {
-                return (
-                  <tr key={product._id}>
-                    <td>
-                      <Image
-                        src={product.image}
-                        width={70}
-                        height={70}
-                        roundedCircle
-                        onClick={() => {
-                          navigate(`/product/${product._id}`);
-                        }}
-                      />
-                    </td>
-                    <td>
+        <Table className="mb-5" hover>
+          <thead>
+            <tr>
+              <th className="text-center">{}</th>
+              <th className="text-center">Name</th>
+              <th className="text-center">Description</th>
+              <th className="text-center">Price</th>
+              <th className="text-center">Stock</th>
+              <th className="text-center">Image Link</th>
+              <th className="text-center">Availability</th>
+              <th className="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortProducts.map((product) => {
+              const dirty = Object.keys(changedFields(product, drafts[product._id] || {})).length > 0;
+              const state = stockState(product.stock);
+              return (
+                <tr key={product._id}>
+                  <td>
+                    <Image
+                      src={product.image}
+                      width={70}
+                      height={70}
+                      roundedCircle
+                      onClick={() => navigate(`/product/${product._id}`)}
+                    />
+                  </td>
+                  <td>
+                    <FormControl
+                      type="text"
+                      className="fw-bold"
+                      value={valueOf(product, "name")}
+                      onChange={(e) => handleChange(product._id, "name", e.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <FormControl
+                      type="text"
+                      value={valueOf(product, "description")}
+                      onChange={(e) => handleChange(product._id, "description", e.target.value)}
+                    />
+                  </td>
+                  <td width={170}>
+                    <InputGroup>
+                      <InputGroup.Text>&#x20B1;</InputGroup.Text>
                       <FormControl
-                        type="text"
-                        name="name"
-                        className="fw-bold"
-                        value={product.name}
-                        onChange={(e) => handleChange(product._id, e)}
+                        type="number"
+                        min={1}
+                        value={valueOf(product, "price")}
+                        onChange={(e) => handleChange(product._id, "price", e.target.value)}
                       />
-                    </td>
-                    <td>
-                      <FormControl
-                        type="text"
-                        name="description"
-                        value={product.description}
-                        onChange={(e) => handleChange(product._id, e)}
-                      />
-                    </td>
-                    <td width={170}>
-                      <InputGroup>
-                        <InputGroup.Text>&#x20B1;</InputGroup.Text>
-                        <FormControl
-                          name="price"
-                          type="number"
-                          value={product.price}
-                          onChange={(e) => handleChange(product._id, e)}
-                        />
-                      </InputGroup>
-                    </td>
-                    <td>
-                      <FormControl
-                        name="image"
-                        value={product.image}
-                        onChange={(e) => handleChange(product._id, e)}
-                      />
-                    </td>
-                    <td className="text-center">
-                      <Form>
-                        <Form.Check
-                          type="switch"
-                          id={`custom-switch-${product._id}`}
-                          defaultChecked={product.isActive}
-                          checked={availability[product._id]}
-                          onChange={handleSwitchChange(product._id)}
-                        />
-                      </Form>
-                    </td>
-                    <td>
-                      <div className="d-flex buttons">
-                        <Button
-                          variant="light"
-                          className="btn btn-outline-dark mx-2"
-                          onClick={(e) => handleUpdate(e, product._id)}
-                        >
-                          <svg class="svg-icon" viewBox="0 0 20 20">
-                            <path
-                              fill="none"
-                              d="M7.629,14.566c0.125,0.125,0.291,0.188,0.456,0.188c0.164,0,0.329-0.062,0.456-0.188l8.219-8.221c0.252-0.252,0.252-0.659,0-0.911c-0.252-0.252-0.659-0.252-0.911,0l-7.764,7.763L4.152,9.267c-0.252-0.251-0.66-0.251-0.911,0c-0.252,0.252-0.252,0.66,0,0.911L7.629,14.566z"
-                            ></path>
-                          </svg>
-                        </Button>{" "}
-                        <Button
-                          variant="light"
-                          className="btn btn-outline-danger mx-2"
-                        >
-                          <svg class="svg-icon" viewBox="0 0 20 20">
-                            <path
-                              fill="none"
-                              d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"
-                            ></path>
-                          </svg>
-                        </Button>{" "}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
-        </Form>
+                    </InputGroup>
+                  </td>
+                  <td width={130}>
+                    <FormControl
+                      type="number"
+                      min={0}
+                      step={1}
+                      aria-label={`Stock for ${product.name}`}
+                      value={valueOf(product, "stock")}
+                      onChange={(e) => handleChange(product._id, "stock", e.target.value)}
+                    />
+                    {state === "out" && (
+                      <Badge bg="dark" className="mt-1">
+                        Sold out
+                      </Badge>
+                    )}
+                    {state === "low" && (
+                      <Badge bg="warning" text="dark" className="mt-1">
+                        Low stock
+                      </Badge>
+                    )}
+                  </td>
+                  <td>
+                    <FormControl
+                      value={valueOf(product, "image")}
+                      onChange={(e) => handleChange(product._id, "image", e.target.value)}
+                    />
+                  </td>
+                  <td className="text-center">
+                    <Form.Check
+                      type="switch"
+                      id={`custom-switch-${product._id}`}
+                      checked={product.isActive !== false}
+                      disabled={!!busy[product._id]}
+                      onChange={(e) => handleSwitch(product, e.target.checked)}
+                    />
+                  </td>
+                  <td>
+                    <div className="d-flex buttons">
+                      <Button
+                        variant="light"
+                        className="btn btn-outline-dark mx-2"
+                        title="Save changes"
+                        disabled={!dirty || !!busy[product._id]}
+                        onClick={() => handleUpdate(product)}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
       </Container>
-      <AddProductModal
-        show={showModal}
-        onHide={handleClose}
-        refresh={fetchProducts}
-      />
+      <AddProductModal show={showModal} onHide={handleClose} refresh={fetchProducts} />
     </>
   );
 }

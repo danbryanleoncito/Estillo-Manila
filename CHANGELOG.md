@@ -2,6 +2,36 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.4.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- Stock is now visible everywhere. Product cards (home, products, search) show a **Sold out** badge
+  and a dimmed card at 0 stock and **Only N left** at 5 or fewer; sold-out products stay visible and
+  openable. Featured products on the home page prefer items that are in stock. One shared
+  `ProductCard` replaces the two duplicated card components (which also nested links inside links).
+- Product page: shows sold out / low stock / no longer available, limits the quantity to what is
+  actually available (live stock, capped at 99, minus what is already in your cart), says how many
+  you already have in your cart, and shows "Sold out" / "Max in cart" on a disabled button.
+- Cart page: each line shows "Sold out", "Only N available" (with a one-click **Reduce to N**) or a
+  low-stock note; Checkout is disabled, with the reason, until the cart can actually be bought; a
+  real empty state and a message for items whose product was deleted.
+- Checkout: an order summary; when items are no longer available (before paying, or after) it
+  lists exactly which ones and how many are left, and refreshes the cart. If a card is charged but
+  the order cannot be finished, the page says so and offers **Finish my order**, which only retries
+  the order and can never create a second charge. An order that opens a shortfall dispute sends the
+  customer to Profile with a notice.
+- Admin: a **Stock** column (with Sold out / Low stock badges) and a Stock field when adding a
+  product.
+
+### Fixed
+- Admin saves sent the whole product, so editing a name overwrote live `stock` with the value from
+  when the page loaded (erasing sales made since). It now sends only the fields that were changed.
+- Admin edit handlers wrote a junk `"undefined"` field; the availability switch used stale global
+  state (always archiving); toasts said "updated" / "added" even when the server refused. All fixed;
+  failures now show the server's message (e.g. "Product Already Exists").
+- Removed the dashboard's delete button, which had no action.
+
 ## [0.3.0] - 2026-09-24
 _Integrated by Dan Leoncito._
 

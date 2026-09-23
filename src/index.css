@@ -84,6 +84,17 @@ code {
   transform: scale(1.03);
   z-index: 1;
 }
+.card-sold-out {
+  filter: grayscale(0.85);
+  opacity: 0.75;
+}
+.card-sold-out:hover {
+  transform: none;
+}
+.stock-badge {
+  font-size: 0.9rem;
+  z-index: 2;
+}
 .card-product {
   min-height: 40rem !important;
 }

@@ -1,6 +1,6 @@
 import { Col, Row, Container } from "react-bootstrap";
 import { Form, FormControl } from "react-bootstrap";
-import AppCard from "../components/Card";
+import ProductCard from "../components/ProductCard";
 import { useEffect, useState } from "react";
 import { api } from "../utils/api";
 import { toastError } from "../utils/notify";
@@ -16,7 +16,7 @@ export default function ProductSearch() {
     let cancelled = false;
     api("/product/active", { auth: false, emptyOn404: [] })
       .then((data) => {
-        if (!cancelled) setProducts(Array.isArray(data) ? data : []);
+        if (!cancelled) setProducts(Array.isArray(data) ? data.filter((p) => p.isActive !== false) : []);
       })
       .catch((err) => !cancelled && toastError(err));
     return () => {
@@ -42,7 +42,7 @@ export default function ProductSearch() {
           body: { name: term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") },
           emptyOn404: [],
         });
-        if (!cancelled) setResults(Array.isArray(data) ? data : []);
+        if (!cancelled) setResults(Array.isArray(data) ? data.filter((p) => p.isActive !== false) : []);
       } catch (err) {
         if (!cancelled) {
           setResults([]);
@@ -84,7 +84,7 @@ export default function ProductSearch() {
         )}
         {shown.map((product) => (
           <Col className="px-0 mx-auto flex-fill" md={4} key={product._id}>
-            <AppCard productProp={product} />
+            <ProductCard product={product} />
           </Col>
         ))}
       </Row>
