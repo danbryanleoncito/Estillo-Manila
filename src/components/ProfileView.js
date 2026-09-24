@@ -9,6 +9,7 @@ import { PaymentBadge } from "./badges";
 import OrderLines from "./OrderLines";
 import DisputeResolveModal from "./DisputeResolveModal";
 import LoadError from "./LoadError";
+import AddressBlock from "./AddressBlock";
 
 // The route is wrapped in <RequireAuth>, so a signed-in user is guaranteed by the time this renders.
 export default function ProfileView() {
@@ -165,6 +166,7 @@ export default function ProfileView() {
               <tr>
                 <th className="text-center">Order Date</th>
                 <th className="text-center">Products</th>
+                <th className="text-center">Deliver to</th>
                 <th className="text-center">Status</th>
                 <th className="text-center">Payment</th>
                 <th className="text-center">Total Price</th>
@@ -181,6 +183,9 @@ export default function ProfileView() {
                       processingByLine={processingByLine}
                       onResolve={setResolving}
                     />
+                  </td>
+                  <td className="text-start">
+                    <AddressBlock address={order.shippingAddress} />
                   </td>
                   <td>{order.status}</td>
                   <td>

@@ -6,6 +6,7 @@ import { openDisputes } from "../utils/orders";
 import { PaymentBadge } from "./badges";
 import OrderLines from "./OrderLines";
 import LoadError from "./LoadError";
+import AddressBlock from "./AddressBlock";
 
 export default function AppOrder() {
   const [orders, setOrders] = useState([]);
@@ -113,7 +114,7 @@ export default function AppOrder() {
           <thead>
             <tr>
               <th className="text-center">Order Date</th>
-              <th className="text-center">Customer</th>
+              <th className="text-center">Deliver to</th>
               <th className="text-center">Products</th>
               <th className="text-center">Status</th>
               <th className="text-center">Payment</th>
@@ -124,7 +125,10 @@ export default function AppOrder() {
             {orders.map((order) => (
               <tr className="text-center align-middle" key={order._id}>
                 <td>{new Date(order.orderedOn).toLocaleDateString("en-US")}</td>
-                <td className="small">{order.userId}</td>
+                <td className="text-start">
+                  <AddressBlock address={order.shippingAddress} />
+                  <div className="text-muted small mt-1">Customer id: {order.userId}</div>
+                </td>
                 <td>
                   <OrderLines lines={order.productsOrdered} processingByLine={processingByLine} />
                 </td>

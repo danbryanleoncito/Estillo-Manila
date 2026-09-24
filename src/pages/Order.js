@@ -14,6 +14,7 @@ import AppPaymentMethod from "../components/AppPaymentMethod";
 import { api, isStockConflict } from "../utils/api";
 import { useCart } from "../context/CartContext";
 import { getLineIssue } from "../utils/cartIssues";
+import { EMPTY_ADDRESS } from "../utils/address";
 import LoadError from "../components/LoadError";
 
 export default function Checkout() {
@@ -40,6 +41,9 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
   const { lines, loaded, error: cartError, missingCount, totalPrice, retry } = useCart();
 
   const [submitting, setSubmitting] = useState(false);
+  // Where the order is going. Sent with the payment (card) or the order (COD); the server saves it.
+  const [address, setAddress] = useState(EMPTY_ADDRESS);
+  const changeAddress = (field, value) => setAddress((prev) => ({ ...prev, [field]: value }));
   // Items the server (or our own pre-check) says are not available: [{ name, requested, available }].
   const [conflict, setConflict] = useState(null);
   // Set once the card has been charged. From then on a retry only finishes the order; it must
@@ -105,14 +109,20 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
     try {
       let result;
       if (paymentMethod === "cod") {
-        result = await api("/order/checkout", { method: "POST", body: {} });
+        result = await api("/order/checkout", {
+          method: "POST",
+          body: { shippingAddress: address },
+        });
       } else {
         let intentId = paidIntentId;
         if (!intentId) {
           if (!stripe || !elements) {
             throw new Error("Payment form is still loading, please try again");
           }
-          const pi = await api("/payment/create-payment-intent", { method: "POST" });
+          const pi = await api("/payment/create-payment-intent", {
+            method: "POST",
+            body: { shippingAddress: address },
+          });
           const confirmation = await stripe.confirmCardPayment(pi.clientSecret, {
             payment_method: { card: elements.getElement(CardElement) },
           });
@@ -220,7 +230,11 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
           </div>
         )}
 
-        <AppCheckoutForm />
+        <AppCheckoutForm
+          address={address}
+          onChange={changeAddress}
+          disabled={Boolean(paidIntentId)}
+        />
         <AppPaymentMethod paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod} />
         <div className="d-flex justify-content-end mb-5">
           <Button type="submit" variant="primary" disabled={submitting || isEmpty || blocked}>
