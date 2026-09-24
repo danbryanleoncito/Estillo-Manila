@@ -52,6 +52,11 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
+### v0.4.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** Stock across the storefront: Sold out and Only N left badges, a quantity limit on the product page, stock-aware cart lines with one-click fixes, a clear list of unavailable items at checkout, a safe "Finish my order" retry after a successful charge, and a Stock column and field for admins.
+- **Fixed:** Editing a product in the admin dashboard no longer overwrites its live stock; the availability switch and admin toasts now reflect what the server actually did.
+
 ### v0.3.0 (2026-09-24)
 _Integrated by Dan Leoncito._
 - **Added:** A shared API helper that keeps the server's error details (such as stock conflicts), a shared cart that keeps the navbar badge and cart page in sync, route guards for the cart, checkout, profile and admin pages, and tests for them.

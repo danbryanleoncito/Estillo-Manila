@@ -1,38 +1,41 @@
 import { useState } from "react";
 import { Modal, Button, Form, Row, Col, InputGroup } from "react-bootstrap";
-import { notyf } from "../utils/notify";
+import { notyf, toastError } from "../utils/notify";
+import { api } from "../utils/api";
 
 export default function AddProductModal({ show, onHide, refresh }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState("");
+  const [stock, setStock] = useState("0");
 
-  function addProduct(e) {
+  async function addProduct(e) {
     e.preventDefault();
-    const productDetails = { name, description, image, price };
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/product`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify(productDetails),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        notyf.success("Product added successful");
+    const productDetails = {
+      name,
+      description,
+      image,
+      price: Number(price),
+      stock: Number(stock),
+    };
+    try {
+      // Failures (duplicate name, invalid stock, not an admin) now show the server's message
+      // instead of "Product added successful".
+      await api("/product", { method: "POST", body: productDetails });
+      notyf.success("Product added successful");
 
-        setName("");
-        setDescription("");
-        setPrice("");
-        setImage("");
+      setName("");
+      setDescription("");
+      setPrice("");
+      setImage("");
+      setStock("0");
 
-        refresh();
-        onHide();
-      })
-      .catch((err) => notyf.error(err));
+      refresh();
+      onHide();
+    } catch (err) {
+      toastError(err);
+    }
   }
 
   return (
@@ -77,7 +80,7 @@ export default function AddProductModal({ show, onHide, refresh }) {
               </Form.Group>
             </Form.Group>
             <Form.Group className="my-2" as={Row}>
-              <Form.Group as={Col} md="6">
+              <Form.Group as={Col} md="12">
                 <Form.Label>Image Link</Form.Label>
                 <Form.Control
                   required
@@ -87,6 +90,8 @@ export default function AddProductModal({ show, onHide, refresh }) {
                   onChange={(e) => setImage(e.target.value)}
                 />
               </Form.Group>
+            </Form.Group>
+            <Form.Group className="my-2" as={Row}>
               <Form.Group as={Col} md="6">
                 <Form.Label>Price</Form.Label>
                 <InputGroup>
@@ -95,12 +100,26 @@ export default function AddProductModal({ show, onHide, refresh }) {
                     required
                     type="number"
                     placeholder="Price"
-                    defaultValue={1}
                     min={1}
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
                   />
                 </InputGroup>
+              </Form.Group>
+              <Form.Group as={Col} md="6">
+                <Form.Label>Stock</Form.Label>
+                <Form.Control
+                  required
+                  type="number"
+                  placeholder="Units in stock"
+                  min={0}
+                  step={1}
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                />
+                <Form.Text className="text-muted">
+                  0 lists the product as sold out until restocked.
+                </Form.Text>
               </Form.Group>
             </Form.Group>
           </Modal.Body>

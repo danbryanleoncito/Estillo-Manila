@@ -1,51 +1,54 @@
 import { Container, Row, Col } from "react-bootstrap";
 import { useState, useEffect } from "react";
-import PreviewProducts from "../components/PreviewProducts";
+import ProductCard from "../components/ProductCard";
+import { api } from "../utils/api";
+import { stockState } from "../utils/stock";
+
+const FEATURED_COUNT = 3;
+
+// Random pick, preferring products that can actually be bought (falls back to everything
+// when fewer than three are in stock).
+export function pickFeatured(products, count = FEATURED_COUNT, random = Math.random) {
+  const active = products.filter((p) => p.isActive !== false);
+  const inStock = active.filter((p) => stockState(p.stock) !== "out");
+  const pool = inStock.length >= count ? inStock : active;
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, count);
+}
 
 export default function Products() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/product/active`)
-      .then((res) => res.json())
+    let cancelled = false;
+    api("/product/active", { auth: false, emptyOn404: [] })
       .then((data) => {
-        if (!Array.isArray(data) || data.length === 0) {
-          setProducts([]);
-          return;
-        }
-
-        const numbers = [];
-        const featured = [];
-        const featuredCount = Math.min(3, data.length);
-
-        const generateRandomNums = () => {
-          let randomNum = Math.floor(Math.random() * data.length);
-
-          if (numbers.indexOf(randomNum) === -1) {
-            numbers.push(randomNum);
-          } else {
-            generateRandomNums();
-          }
-        };
-
-        for (let i = 0; i < featuredCount; i++) {
-          generateRandomNums();
-
-          featured.push(
-            <Col key={data[numbers[i]]._id}>
-              <PreviewProducts data={data[numbers[i]]} />
-            </Col>
-          );
-        }
-        setProducts(featured);
+        if (!cancelled) setProducts(Array.isArray(data) ? pickFeatured(data) : []);
+      })
+      .catch(() => {
+        if (!cancelled) setProducts([]);
       });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
   return (
     <Container className="my-5">
       <Row className="mb-2">
         <h1 className="fw-bolder">Featured Products</h1>
       </Row>
-      <Row>{products}</Row>
+      <Row>
+        {products.map((product) => (
+          <Col key={product._id}>
+            <ProductCard product={product} />
+          </Col>
+        ))}
+      </Row>
     </Container>
   );
 }
