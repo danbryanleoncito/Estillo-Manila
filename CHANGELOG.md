@@ -2,6 +2,14 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.7.1] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Fixed
+- The checkout form rejected a valid mobile number written with a space after the country code
+  (`+63 917 123 4567`), even though the server accepts it. The form now accepts exactly the numbers the
+  server does: `09…` or `+63…` with spaces or dashes anywhere. Found by a live check of the address form.
+
 ## [0.7.0] - 2026-09-24
 _Integrated by Dan Leoncito._
 

@@ -119,6 +119,8 @@ test("each bad value makes its field invalid, and each good value makes it valid
     ["Full name", "", "Ada Lovelace"],
     ["Mobile number", "12345", "0917 123 4567"],
     ["Mobile number", "08171234567", "+639171234567"],
+    ["Mobile number", "555", "+63 917 123 4567"],
+    ["Mobile number", "63 917 123 4567", "0917-123-4567"],
     ["Street address", "", "12 Rizal Street"],
     ["City / municipality", "", "Makati"],
     ["Province / region", "", "Metro Manila"],

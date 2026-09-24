@@ -45,14 +45,24 @@ test("the empty form starts in the Philippines with everything else blank", () =
   expect(Object.entries(EMPTY_ADDRESS).filter(([k, v]) => k !== "country" && v !== "")).toEqual([]);
 });
 
-test("the phone pattern takes 09… and +639… numbers, with spaces or dashes, and nothing else", () => {
-  const phone = new RegExp(PHONE_PATTERN);
-  for (const ok of ["09171234567", "0917 123 4567", "0917-123-4567", "+639171234567", "+63 917 123 4567".replace("+63 9", "+639")]) {
-    expect(phone.test(ok)).toBe(true);
-  }
-  for (const bad of ["", "12345", "08171234567", "917123456", "abc"]) {
-    expect(phone.test(bad)).toBe(false);
-  }
+test("the phone pattern takes exactly the numbers the server takes", () => {
+  // The browser compiles `pattern` with the "v" flag, so test it that way.
+  const phone = new RegExp(PHONE_PATTERN, "v");
+  const accepted = [
+    "09171234567",
+    "0917 123 4567",
+    "0917-123-4567",
+    "+639171234567",
+    "+63 917 123 4567",
+    "+63-917-123-4567",
+    "+63 9171234567",
+    " 09171234567 ",
+    "+ 63 917 123 4567",
+    "09 17 12 34 567",
+  ];
+  const refused = ["", "12345", "08171234567", "917123456", "abc", "639171234567", "091712345678", "0917 123 45678", "+63 817 123 4567"];
+  for (const ok of accepted) expect([ok, phone.test(ok)]).toEqual([ok, true]);
+  for (const bad of refused) expect([bad, phone.test(bad)]).toEqual([bad, false]);
 });
 
 test("the postal code pattern is exactly four digits", () => {
