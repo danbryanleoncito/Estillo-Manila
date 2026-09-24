@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Image from "react-bootstrap/Image";
 import { Link, useNavigate } from "react-router-dom";
 import { notyf, toastError } from "../utils/notify";
+import LoadError from "./LoadError";
 import { api } from "../utils/api";
 import { stockState } from "../utils/stock";
 import AddProductModal from "./AddProductModal";
@@ -28,6 +29,7 @@ export function changedFields(product, draft) {
 
 function AppDashBoard() {
   const [products, setProducts] = useState([]);
+  const [loadError, setLoadError] = useState(null);
   // Edits in progress, per product id: { [id]: { name?, price?, stock?, ... } }.
   const [drafts, setDrafts] = useState({});
   const [busy, setBusy] = useState({});
@@ -38,11 +40,13 @@ function AppDashBoard() {
   const handleClose = () => setShowModal(false);
 
   async function fetchProducts() {
+    setLoadError(null);
     try {
       const data = await api("/product/all", { emptyOn404: [] });
       setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
-      toastError(err);
+      // Shown in the page (with Retry): an empty table would look like "no products".
+      setLoadError(err.message);
     }
   }
 
@@ -123,6 +127,9 @@ function AppDashBoard() {
             Show User Orders
           </Button>{" "}
         </div>
+        {loadError && (
+          <LoadError message="We could not load the products." onRetry={fetchProducts} />
+        )}
         <Table className="mb-5" hover>
           <thead>
             <tr>

@@ -6,13 +6,13 @@ import { useCart } from "../context/CartContext";
 jest.mock("../context/CartContext", () => ({ useCart: jest.fn() }));
 
 let setQuantity;
-let refreshCart;
+let retry;
 
 // CRA resets mocks before each test, so the mock cart is installed per test.
 beforeEach(() => {
   setQuantity = jest.fn().mockResolvedValue({});
-  refreshCart = jest.fn().mockResolvedValue({});
-  useCart.mockReturnValue({ setQuantity, refreshCart });
+  retry = jest.fn().mockResolvedValue(null);
+  useCart.mockReturnValue({ setQuantity, retry });
 });
 
 const renderSelector = (props) =>
@@ -56,6 +56,6 @@ test("a refused change snaps back to the server's quantity and refreshes the car
   setQuantity.mockRejectedValue(new Error("Only 3 of Tee available"));
   renderSelector({ quantity: 2, stock: 5 });
   userEvent.click(screen.getByLabelText("Increase quantity"));
-  await waitFor(() => expect(refreshCart).toHaveBeenCalled());
+  await waitFor(() => expect(retry).toHaveBeenCalled());
   await waitFor(() => expect(screen.getByLabelText("Quantity")).toHaveValue(2));
 });

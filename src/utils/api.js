@@ -11,6 +11,18 @@ export class ApiError extends Error {
   }
 }
 
+// Fired (on window) when the server rejects the saved login: the token is expired, forged or
+// belongs to a user that no longer exists. App.js listens and signs the user out with a clear message.
+export const SESSION_EXPIRED_EVENT = "estilo:session-expired";
+
+// True when the server rejected the login itself, as opposed to "you may not do this" (a
+// non-admin calling an admin route also answers 403, with the message "Action Forbidden").
+function isAuthFailure(status, data) {
+  if (!data || typeof data.auth !== "string") return false;
+  if (status === 401) return true;
+  return status === 403 && data.message !== "Action Forbidden";
+}
+
 // The backend answers errors in a few shapes: {message}, {error:{message}}, {auth}.
 export function errorMessage(data, fallback = "Something went wrong. Please try again.") {
   if (!data || typeof data !== "object") return fallback;
@@ -52,6 +64,9 @@ export async function api(path, { method = "GET", body, auth = true, emptyOn404 
   // `=== false` (not `!res.ok`) so a bare fetch stub without an `ok` field still counts as success.
   if (res.ok === false) {
     if (res.status === 404 && emptyOn404 !== undefined) return emptyOn404;
+    if (auth && headers.Authorization && isAuthFailure(res.status, data)) {
+      window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+    }
     throw new ApiError(res.status, data, errorMessage(data));
   }
   return data;
@@ -60,3 +75,7 @@ export async function api(path, { method = "GET", body, auth = true, emptyOn404 
 // A 409 from the backend that lists the items that are not available.
 export const isStockConflict = (err) =>
   err instanceof ApiError && err.status === 409 && Array.isArray(err.data && err.data.outOfStock);
+
+// The server answered "there is no such thing" (as opposed to failing, or being unreachable).
+export const isNotFound = (err) =>
+  err instanceof ApiError && (err.status === 404 || err.status === 400);

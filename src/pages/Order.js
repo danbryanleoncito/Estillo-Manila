@@ -14,6 +14,7 @@ import AppPaymentMethod from "../components/AppPaymentMethod";
 import { api, isStockConflict } from "../utils/api";
 import { useCart } from "../context/CartContext";
 import { getLineIssue } from "../utils/cartIssues";
+import LoadError from "../components/LoadError";
 
 export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -36,7 +37,7 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
-  const { lines, loaded, missingCount, totalPrice, refreshCart } = useCart();
+  const { lines, loaded, error: cartError, missingCount, totalPrice, retry } = useCart();
 
   const [submitting, setSubmitting] = useState(false);
   // Items the server (or our own pre-check) says are not available: [{ name, requested, available }].
@@ -46,10 +47,11 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
   const [paidIntentId, setPaidIntentId] = useState(null);
   const [failure, setFailure] = useState(null);
 
-  const isEmpty = loaded && lines.length === 0 && missingCount === 0;
+  // A cart that failed to load is not an empty cart, and cannot be checked out either.
+  const isEmpty = loaded && !cartError && lines.length === 0 && missingCount === 0;
   const issues = lines.map((line) => getLineIssue(line));
   const problemCount = issues.filter(Boolean).length + missingCount;
-  const blocked = problemCount > 0 && !paidIntentId;
+  const blocked = (problemCount > 0 || Boolean(cartError)) && !paidIntentId;
 
   const localConflict = () =>
     lines
@@ -68,7 +70,7 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
     setPaidIntentId(null);
     setFailure(null);
     setConflict(null);
-    await refreshCart().catch(() => {});
+    await retry(); // the order is placed either way; a refresh failure shows on the next page
     if (result && result.disputesOpened > 0) {
       // Some lines were only partly available; the customer has to decide on the Profile page.
       navigate("/profile", { state: { notice: { variant: "warning", text: result.message } } });
@@ -83,6 +85,10 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
     if (submitting) return;
     if (isEmpty) {
       notyf.error("Your cart is empty");
+      return;
+    }
+    if (blocked && cartError) {
+      notyf.error("We could not load your cart. Please retry.");
       return;
     }
     if (blocked) {
@@ -133,7 +139,7 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
         setConflict(err.data.outOfStock);
         if (chargedId || /refunded/i.test(err.message)) setPaidIntentId(null);
         setFailure(null);
-        refreshCart().catch(() => {});
+        retry();
         notyf.error(err.message);
       } else if (chargedId) {
         // Charged, but the order could not be finished: keep the intent so a retry only finishes it.
@@ -150,6 +156,10 @@ function CheckoutFormInner({ paymentMethod, setPaymentMethod }) {
   return (
     <Container>
       <Form onSubmit={handleSubmit}>
+        {loaded && cartError && (
+          <LoadError message="We could not load your cart, so we cannot check it out yet." onRetry={retry} />
+        )}
+
         {isEmpty && (
           <Alert variant="warning" className="mt-4">
             Your cart is empty. <Link to="/cart">Go back to your cart</Link>.

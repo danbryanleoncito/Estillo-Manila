@@ -4,11 +4,11 @@ import { Card, CardText, CardTitle, CardBody } from "react-bootstrap";
 import { useLocation } from "react-router-dom";
 import UserContext from "../context/UserContext";
 import { api } from "../utils/api";
-import { toastError } from "../utils/notify";
 import { openDisputes, timeLeft } from "../utils/orders";
 import { PaymentBadge } from "./badges";
 import OrderLines from "./OrderLines";
 import DisputeResolveModal from "./DisputeResolveModal";
+import LoadError from "./LoadError";
 
 // The route is wrapped in <RequireAuth>, so a signed-in user is guaranteed by the time this renders.
 export default function ProfileView() {
@@ -17,19 +17,28 @@ export default function ProfileView() {
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [disputes, setDisputes] = useState([]);
+  // Disputes whose choice was saved but whose refund is still going through.
+  const [processing, setProcessing] = useState([]);
   const [resolving, setResolving] = useState(null);
+  // A failed load must not read as "no orders yet" / a blank profile.
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
+  const [profileError, setProfileError] = useState(null);
   // Set by checkout when some items were only partly available.
   const [notice, setNotice] = useState((location.state && location.state.notice) || null);
 
+  const loadProfile = useCallback(async () => {
+    setProfileError(null);
+    try {
+      setProfile(await api("/users/details"));
+    } catch (err) {
+      setProfileError(err.message);
+    }
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
-    api("/users/details")
-      .then((data) => !cancelled && setProfile(data))
-      .catch((err) => !cancelled && toastError(err));
-    return () => {
-      cancelled = true;
-    };
-  }, [user.id]);
+    loadProfile();
+  }, [loadProfile, user.id]);
 
   // Orders and disputes together, because deciding on a dispute changes both. 404 means "none yet".
   const loadOrders = useCallback(async () => {
@@ -39,15 +48,29 @@ export default function ProfileView() {
     ]);
     const list = Array.isArray(orderData && orderData.orders) ? orderData.orders : [];
     setOrders([...list].sort((a, b) => new Date(b.orderedOn) - new Date(a.orderedOn)));
-    setDisputes(openDisputes(disputeData && disputeData.disputes));
+    const all = Array.isArray(disputeData && disputeData.disputes) ? disputeData.disputes : [];
+    setDisputes(openDisputes(all));
+    setProcessing(all.filter((d) => d.status === "Resolving"));
   }, []);
 
-  useEffect(() => {
-    loadOrders().catch((err) => toastError(err));
-  }, [loadOrders, user.id]);
+  // Never rejects: a failure is kept in `ordersError` and shown with a Retry button. The modal
+  // also calls this after a decision, so a failed reload cannot look like a failed decision.
+  const loadAll = useCallback(async () => {
+    setOrdersError(null);
+    try {
+      await loadOrders();
+    } catch (err) {
+      setOrdersError(err.message);
+    } finally {
+      setOrdersLoaded(true);
+    }
+  }, [loadOrders]);
 
-  // Reload for the modal without letting a failed reload look like a failed decision.
-  const reload = useCallback(() => loadOrders().catch((err) => toastError(err)), [loadOrders]);
+  useEffect(() => {
+    loadAll();
+  }, [loadAll, user.id]);
+
+  const reload = loadAll;
 
   const disputeByLine = useMemo(() => {
     const map = {};
@@ -57,10 +80,21 @@ export default function ProfileView() {
     return map;
   }, [disputes]);
 
+  const processingByLine = useMemo(() => {
+    const map = {};
+    processing.forEach((d) => {
+      map[d.lineId] = d;
+    });
+    return map;
+  }, [processing]);
+
   const fullName = profile ? `${profile.firstName} ${profile.lastName}` : "";
 
   return (
     <Container className="my-5 py-5">
+      {profileError && (
+        <LoadError message="We could not load your profile details." onRetry={loadProfile} />
+      )}
       <Row>
         <Col className="justify-content-center d-flex">
           <Card className="mx-5 text-center p-5 w-50" width={150}>
@@ -119,7 +153,11 @@ export default function ProfileView() {
           </Alert>
         )}
 
-        {orders.length === 0 ? (
+        {ordersError ? (
+          <LoadError message="We could not load your orders." onRetry={loadAll} />
+        ) : !ordersLoaded ? (
+          <p className="text-muted">Loading your orders…</p>
+        ) : orders.length === 0 ? (
           <p className="text-muted">You have not placed any orders yet.</p>
         ) : (
           <Table className="mb-5" hover responsive>
@@ -140,6 +178,7 @@ export default function ProfileView() {
                     <OrderLines
                       lines={order.productsOrdered}
                       disputeByLine={disputeByLine}
+                      processingByLine={processingByLine}
                       onResolve={setResolving}
                     />
                   </td>

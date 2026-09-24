@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button } from "react-bootstrap";
+import { Badge, Button } from "react-bootstrap";
 import { api } from "../utils/api";
 import { LineStatusBadge } from "./badges";
 import { lineProductId, lineUnitPrice, storedLineName, timeLeft } from "../utils/orders";
@@ -35,7 +35,12 @@ function useProductNames(ids) {
 
 // The items of one order. `disputeByLine` maps an order line's _id to its open dispute; when
 // `onResolve` is given (the customer's own orders) a Disputed line gets a Resolve button.
-export default function OrderLines({ lines, disputeByLine = {}, onResolve }) {
+export default function OrderLines({
+  lines,
+  disputeByLine = {},
+  processingByLine = {},
+  onResolve,
+}) {
   const legacyIds = (lines || [])
     .filter((l) => !storedLineName(l))
     .map((l) => lineProductId(l));
@@ -49,6 +54,8 @@ export default function OrderLines({ lines, disputeByLine = {}, onResolve }) {
         const requested = line.requestedQuantity ?? line.quantity;
         const cancelled = status === "Cancelled";
         const dispute = disputeByLine[line._id];
+        // The customer already chose; the refund is still going through.
+        const refunding = status === "Disputed" && Boolean(processingByLine[line._id]);
         const partial = status === "Disputed" || status === "Adjusted";
         return (
           <div key={line._id || i} className="mb-2">
@@ -63,16 +70,22 @@ export default function OrderLines({ lines, disputeByLine = {}, onResolve }) {
                   ? `× ${line.quantity} of ${requested}`
                   : `× ${line.quantity}`}
               </span>{" "}
-              {status !== "Fulfilled" && <LineStatusBadge status={status} />}
+              {refunding ? (
+                <Badge bg="info" text="dark">
+                  Refund processing
+                </Badge>
+              ) : (
+                status !== "Fulfilled" && <LineStatusBadge status={status} />
+              )}
             </div>
             <div className="small text-muted">
               &#x20B1;{lineUnitPrice(line)} each
               {line.refundedAmount > 0 && <> &middot; &#x20B1;{line.refundedAmount} refunded</>}
-              {status === "Disputed" && dispute && (
+              {status === "Disputed" && dispute && !refunding && (
                 <> &middot; held for you, {timeLeft(dispute.expiresAt).label}</>
               )}
             </div>
-            {status === "Disputed" && dispute && onResolve && (
+            {status === "Disputed" && dispute && !refunding && onResolve && (
               <Button
                 size="sm"
                 variant="outline-dark"
