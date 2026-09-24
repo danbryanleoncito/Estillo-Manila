@@ -1,18 +1,16 @@
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
 import { Container, Form, FormControl, InputGroup } from "react-bootstrap";
-import { useEffect, useState, useContext } from "react";
-import UserContext from "../context/UserContext";
+import { useEffect, useState } from "react";
 // import { CiTrash } from "react-icons/ci";
 import Image from "react-bootstrap/Image";
 // import { FaCheck } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
-import { Notyf } from "notyf";
+import { notyf } from "../utils/notify";
 import AddProductModal from "./AddProductModal";
 
 function AppDashBoard() {
   const [products, setProducts] = useState([]);
-  const { user } = useContext(UserContext);
   const [availability, setAvailability] = useState(
     products.reduce((isActive, switchObj) => {
       isActive = switchObj.defaultChecked;
@@ -20,8 +18,6 @@ function AppDashBoard() {
     }, {})
   );
   const navigate = useNavigate();
-
-  const notyf = new Notyf();
 
   const [showModal, setShowModal] = useState(false);
 
@@ -126,14 +122,6 @@ function AppDashBoard() {
   useEffect(() => {
     fetchProducts();
   }, []);
-
-  useEffect(() => {
-    if (!user.isAdmin) {
-      navigate("/");
-    } else {
-      navigate("/admin");
-    }
-  }, [user, navigate]);
 
   return (
     <>

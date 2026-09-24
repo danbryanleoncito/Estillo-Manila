@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Modal, Button, Form, Row, Col, InputGroup } from "react-bootstrap";
-import { Notyf } from "notyf";
+import { notyf } from "../utils/notify";
 
 export default function AddProductModal({ show, onHide, refresh }) {
-  const notyf = new Notyf();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");

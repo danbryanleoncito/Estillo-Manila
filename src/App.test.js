@@ -4,7 +4,7 @@ import App from "./App";
 // CRA's jest config sets resetMocks: true, so the stub has to be installed per test.
 beforeEach(() => {
   global.fetch = jest.fn(() =>
-    Promise.resolve({ json: () => Promise.resolve([]) })
+    Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
   );
 });
 

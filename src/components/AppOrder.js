@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
 import { Container, Button, Table, Badge } from "react-bootstrap";
 import { Link } from "react-router-dom";
+import { api } from "../utils/api";
+import { toastError } from "../utils/notify";
 
 export default function AppOrder() {
   const [orders, setOrders] = useState([]);
 
+  // Load once. This used to have no dependency array (an endless refetch loop) and crashed
+  // on `orders.map` whenever the response was not `{ orders: [...] }`.
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/order/all-orders`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => res.json())
+    let cancelled = false;
+    api("/order/all-orders", { emptyOn404: { orders: [] } })
       .then((data) => {
-        setOrders(data.orders);
-        console.log(data.orders);
-      });
-  });
+        if (!cancelled) setOrders(Array.isArray(data && data.orders) ? data.orders : []);
+      })
+      .catch((err) => !cancelled && toastError(err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <Container className="my-5">
