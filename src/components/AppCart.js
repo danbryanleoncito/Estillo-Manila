@@ -6,16 +6,28 @@ import QuantitySelector from "./QuantitySelector";
 import { notyf, toastError } from "../utils/notify";
 import { useCart } from "../context/CartContext";
 import { getLineIssue, getLowStockNote } from "../utils/cartIssues";
+import LoadError from "./LoadError";
 
 export default function AppCart() {
   const navigate = useNavigate();
   // The cart lives in CartContext (fetched once, refreshed after every change).
-  const { lines, loaded, missingCount, totalPrice, clearCart, removeItem, setQuantity } =
-    useCart();
+  const {
+    lines,
+    loaded,
+    error,
+    retry,
+    missingCount,
+    totalPrice,
+    clearCart,
+    removeItem,
+    setQuantity,
+  } = useCart();
 
   const issues = lines.map((line) => getLineIssue(line));
   const problemCount = issues.filter(Boolean).length + missingCount;
-  const isEmpty = loaded && lines.length === 0 && missingCount === 0;
+  // A cart that failed to load is not an empty cart.
+  const loadFailed = loaded && error && lines.length === 0 && missingCount === 0;
+  const isEmpty = loaded && !error && lines.length === 0 && missingCount === 0;
 
   function goToCheckout() {
     if (problemCount > 0) {
@@ -61,6 +73,14 @@ export default function AppCart() {
 
       {!loaded && <p className="text-muted mt-5">Loading your cart…</p>}
 
+      {loadFailed && <LoadError message="We could not load your cart." onRetry={retry} />}
+      {loaded && error && !loadFailed && (
+        <LoadError
+          message="We could not refresh your cart, so what you see may be out of date."
+          onRetry={retry}
+        />
+      )}
+
       {isEmpty && (
         <Container className="my-5 text-center py-5">
           <h3 className="fw-bolder">Your cart is empty</h3>
@@ -68,7 +88,7 @@ export default function AppCart() {
         </Container>
       )}
 
-      {loaded && !isEmpty && (
+      {loaded && !isEmpty && !loadFailed && (
         <>
           {missingCount > 0 && (
             <Alert variant="warning" className="mt-4">
@@ -144,8 +164,8 @@ export default function AppCart() {
                           />
                         </div>
                       </td>
-                      <td id="price">&#x20B1;{product.price}</td>
-                      <td id="subtotal">&#x20B1;{crt.subtotal}</td>
+                      <td className="cart-price">&#x20B1;{product.price}</td>
+                      <td className="cart-subtotal">&#x20B1;{crt.subtotal}</td>
                       <td>
                         <Button
                           variant="outline-danger"

@@ -2,7 +2,8 @@ import { useEffect, useState, useContext, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import UserContext from "../context/UserContext";
 import { useCart } from "../context/CartContext";
-import { api } from "../utils/api";
+import { api, isNotFound } from "../utils/api";
+import LoadError from "../components/LoadError";
 import { notyf, toastError } from "../utils/notify";
 import { MAX_QTY_PER_LINE, maxPurchasable, stockState } from "../utils/stock";
 
@@ -15,17 +16,31 @@ export default function ProductsView() {
   const { addToCart: addLineToCart, quantityInCart } = useCart();
 
   const [product, setProduct] = useState(null);
-  const [status, setStatus] = useState("loading"); // loading | ready | missing
+  const [status, setStatus] = useState("loading"); // loading | ready | missing | error
+  const [loadMessage, setLoadMessage] = useState("");
   const [quantity, setQuantity] = useState("1"); // text, so the field can be typed into
   const [submitting, setSubmitting] = useState(false);
 
-  const loadProduct = useCallback(async () => {
+  // `refresh`: the page is already showing the product and this only updates its numbers, so a
+  // failure is a toast, not a replacement of the whole page by an error.
+  const loadProduct = useCallback(async (refresh = false) => {
     try {
       const data = await api(`/product/${productId}`, { auth: false });
       setProduct(data);
       setStatus("ready");
     } catch (err) {
-      setStatus("missing");
+      if (refresh) {
+        toastError(err);
+        return;
+      }
+      // Only "the server says there is no such product" is "not found". A dropped connection or
+      // a server error is a failure to load, and must not tell the customer the product is gone.
+      if (isNotFound(err)) {
+        setStatus("missing");
+      } else {
+        setLoadMessage(err.message);
+        setStatus("error");
+      }
     }
   }, [productId]);
 
@@ -64,7 +79,7 @@ export default function ProductsView() {
       // e.g. 409 "Only 3 of X available": show the server's message and refresh the numbers
       // on screen so the limiter matches reality.
       toastError(err);
-      if (err.status === 409) loadProduct();
+      if (err.status === 409) loadProduct(true);
     } finally {
       setSubmitting(false);
     }
@@ -74,6 +89,20 @@ export default function ProductsView() {
     return (
       <Container className="my-5 py-5 text-center">
         <p className="text-muted">Loading product…</p>
+      </Container>
+    );
+  }
+  if (status === "error") {
+    return (
+      <Container className="my-5 py-5">
+        <LoadError
+          message={loadMessage || "We could not load this product."}
+          onRetry={() => {
+            setStatus("loading");
+            loadProduct();
+          }}
+        />
+        <Link to="/product">Back to all products</Link>
       </Container>
     );
   }

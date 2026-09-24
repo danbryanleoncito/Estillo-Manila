@@ -9,7 +9,7 @@ import { maxPurchasable } from "../utils/stock";
 // product's current stock (from the populated cart). It never offers more than the server will
 // accept, and if a change is refused it snaps back to the server's quantity.
 export default function QuantitySelector({ productId, quantity, stock }) {
-  const { setQuantity, refreshCart } = useCart();
+  const { setQuantity, retry } = useCart();
   const [draft, setDraft] = useState(String(quantity));
   const [busy, setBusy] = useState(false);
 
@@ -36,7 +36,7 @@ export default function QuantitySelector({ productId, quantity, stock }) {
       toastError(err);
       setDraft(String(quantity));
       // The rejection usually means stock moved; pull the latest numbers.
-      refreshCart().catch(() => {});
+      retry(); // a failure is kept in the cart's error state, which the cart page shows
     } finally {
       setBusy(false);
     }

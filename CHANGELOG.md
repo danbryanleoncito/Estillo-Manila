@@ -2,6 +2,39 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.6.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- A **Retry** state (`LoadError`) wherever something loads: the cart, checkout, product page, home
+  featured products, search, profile, admin products and admin orders. A failed request no longer
+  looks like "nothing here".
+- Admin orders show a **"needs attention"** panel from the new backend incidents list (refunds that
+  keep failing, stuck disputes, payments with no order).
+- Profile and admin orders show **Refund processing** on a line whose customer already chose but
+  whose refund has not gone through yet.
+- Signing out on an invalid or expired login: the server rejecting the saved login now signs the user
+  out once with one clear message, instead of a "Failed" toast on every request.
+
+### Fixed
+- **Login:** a wrong password said "<email> does not exist"; it now says "Incorrect email or password"
+  (the same message for an unknown email). Network failures were silent. The login token was written to
+  the browser console.
+- **Register:** the password and confirmation were written to the console on every keystroke; server
+  refusals (duplicate email, weak password) were ignored; the password hint contradicted the rules.
+  Errors are now shown, the two passwords are compared, and the avatar link is marked optional.
+- **Cart:** a cart that failed to load said "Your cart is empty"; refresh failures were swallowed in
+  three places; a change that was saved but could not be refreshed was reported as a failure (so it
+  could be repeated). Checkout no longer says "cart is empty" or "items unavailable" when the cart
+  simply did not load.
+- **Page refresh while the server is unreachable** sent a logged-in user to `/login`; it now keeps the
+  login and offers Retry.
+- **Product page** said "Product not found" for every failure; only a 404/400 does now. A failed
+  background refresh no longer replaces a working page.
+- **Search** showed "No products found" when the search itself failed.
+- Duplicate `id`s per cart row, `class` instead of `className` in the navbar, and a checkout form that
+  defaulted to United Arab Emirates for a Manila store (now Philippines / Province).
+
 ## [0.5.0] - 2026-09-24
 _Integrated by Dan Leoncito._
 

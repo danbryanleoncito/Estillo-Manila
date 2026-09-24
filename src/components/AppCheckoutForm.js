@@ -20,7 +20,7 @@ const AppCheckoutForm = () => {
         <Form.Group controlId="formCountry">
           <Form.Label>Country/Region</Form.Label>
           <Form.Control as="select">
-            <option>United Arab Emirates</option>
+            <option>Philippines</option>
             {/* Add more countries as needed */}
           </Form.Control>
         </Form.Group>
@@ -53,7 +53,7 @@ const AppCheckoutForm = () => {
           <Form.Control type="text" placeholder="Apartment, suite, etc." />
         </Form.Group>
 
-        {/* City / Emirate */}
+        {/* City / Province */}
         <Row>
           <Col>
             <Form.Group controlId="formCity">
@@ -62,11 +62,11 @@ const AppCheckoutForm = () => {
             </Form.Group>
           </Col>
           <Col>
-            <Form.Group controlId="formEmirate">
-              <Form.Label>Emirate</Form.Label>
+            <Form.Group controlId="formProvince">
+              <Form.Label>Province</Form.Label>
               <Form.Control as="select">
-                <option>Choose...</option>
-                {/* Add more emirates as needed */}
+                <option>Metro Manila</option>
+                {/* Add more provinces as needed */}
               </Form.Control>
             </Form.Group>
           </Col>

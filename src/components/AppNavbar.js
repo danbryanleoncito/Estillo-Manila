@@ -37,8 +37,8 @@ export default function NavigationBar() {
             </Nav.Link>
             {user.id !== null ? (
               <div className="d-flex justify-content-end ms-auto">
-                <Nav.Link as={NavLink} to="/cart" exact="true">
-                  <svg class="svg-icon" viewBox="0 0 20 20">
+                <Nav.Link as={NavLink} to="/cart">
+                  <svg className="svg-icon" viewBox="0 0 20 20">
                     <path
                       fill="none"
                       d="M17.696,9.368H2.305c-0.189,0-0.367,0.092-0.478,0.245c-0.11,0.155-0.141,0.352-0.08,0.532l2.334,6.918c0.081,0.238,0.305,0.4,0.556,0.4h10.735c0.253,0,0.478-0.162,0.557-0.402l2.323-6.917c0.062-0.179,0.03-0.376-0.079-0.531C18.062,9.459,17.886,9.368,17.696,9.368z M14.95,16.287H5.062l-1.938-5.743h13.753L14.95,16.287z"
@@ -56,7 +56,7 @@ export default function NavigationBar() {
                 </Nav.Link>
                 <NavDropdown
                   title={
-                    <svg class="svg-icon" viewBox="0 0 20 20">
+                    <svg className="svg-icon" viewBox="0 0 20 20">
                       <path
                         fill="none"
                         d="M14.023,12.154c1.514-1.192,2.488-3.038,2.488-5.114c0-3.597-2.914-6.512-6.512-6.512
@@ -68,13 +68,13 @@ export default function NavigationBar() {
                       ></path>
                     </svg>
                   }
-                  id="basic-nav-dropdown "
+                  id="basic-nav-dropdown"
                 >
-                  <Nav.Link as={NavLink} to="/profile" exact="true">
+                  <Nav.Link as={NavLink} to="/profile">
                     Profile
                   </Nav.Link>
                   {user.isAdmin === true ? (
-                    <Nav.Link as={NavLink} to="/admin" exact="true">
+                    <Nav.Link as={NavLink} to="/admin">
                       Admin
                     </Nav.Link>
                   ) : (
@@ -88,7 +88,7 @@ export default function NavigationBar() {
             ) : (
               <NavDropdown
                 title={
-                  <svg class="svg-icon" viewBox="0 0 20 20">
+                  <svg className="svg-icon" viewBox="0 0 20 20">
                     <path
                       fill="none"
                       d="M14.023,12.154c1.514-1.192,2.488-3.038,2.488-5.114c0-3.597-2.914-6.512-6.512-6.512
@@ -101,7 +101,7 @@ export default function NavigationBar() {
                   </svg>
                 }
                 className="justify-content-end ms-auto"
-                id="basic-nav-dropdown "
+                id="basic-nav-dropdown"
               >
                 <NavDropdown.Item as={NavLink} to="/login">
                   Login

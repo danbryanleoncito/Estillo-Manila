@@ -1,78 +1,53 @@
 import React, { useState, useContext } from "react";
-import { Form, Button, Container, Row, Col } from "react-bootstrap";
+import { Form, Button, Container, Row, Col, Spinner } from "react-bootstrap";
 import { Link, Navigate } from "react-router-dom";
 
-import { notyf } from "../utils/notify";
+import { api } from "../utils/api";
+import { notyf, toastError } from "../utils/notify";
 import UserContext from "../context/UserContext";
 
 function Login() {
   const { user, setUser } = useContext(UserContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [isActive, setIsActive] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  function authenticate(e) {
+  async function authenticate(e) {
     // Prevents page redirection via form submission
     e.preventDefault();
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/users/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: email,
-        password: password,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        if (data.access !== undefined) {
-          console.log(data.access);
-
-          // Stores the token of the authenticated user in the local storage
-          // Syntax: localStorage.setItem('propertyName', value)
-          localStorage.setItem("token", data.access);
-          retrieveUserDetails(data.access);
-
-          // Clear input fields after submission
-          setEmail("");
-          setPassword("");
-
-          notyf.success(`You are now logged in`);
-        } else if (data.message === "Incorrect email or password") {
-          notyf.error(`Incorrect email or password`);
-        } else {
-          notyf.error(`${email} does not exist`);
-        }
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const login = await api("/users/login", {
+        method: "POST",
+        auth: false,
+        body: { email: email.trim(), password },
       });
+
+      // Stores the token of the authenticated user in the local storage
+      localStorage.setItem("token", login.access);
+      const me = await api("/users/details");
+
+      // Changes the global "user" state to store the "id" and the "isAdmin" property of the user
+      // which will be used for validation across the whole application
+      setUser({ id: me._id, isAdmin: me.isAdmin });
+      setEmail("");
+      setPassword("");
+      notyf.success("You are now logged in");
+    } catch (err) {
+      // A token whose details could not be fetched is not a login.
+      localStorage.removeItem("token");
+      if (err.status === 401 || err.status === 404) {
+        // Same message for "no such email" and "wrong password", so the form does not reveal
+        // which emails have an account.
+        notyf.error("Incorrect email or password");
+      } else {
+        toastError(err);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
-
-  function retrieveUserDetails(token) {
-    fetch(`${process.env.REACT_APP_API_BASE_URL}/users/details`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-
-        //Changes the global "user" state to store the "id" and the "isAdmin" property of the user which will be used for validation across the whole application
-        setUser({
-          id: data._id,
-          isAdmin: data.isAdmin,
-        });
-      });
-  }
-
-  // useEffect(() => {
-  //   if (email !== "" && password !== "") {
-  //     setIsActive(true);
-  //   } else {
-  //     setIsActive(false);
-  //   }
-  // }, [email, password]);
 
   return user.id !== null ? (
     user.isAdmin ? (
@@ -85,7 +60,7 @@ function Login() {
       <Row className="justify-content-md-center py-5">
         <Col xs={12} md={6}>
           <h1 className="text-center mb-4 fw-bolder">Login</h1>
-          <Form onSubmit={(e) => authenticate(e)}>
+          <Form onSubmit={authenticate}>
             <Form.Group className="mb-3" controlId="formBasicEmail">
               <Form.Label>Email:</Form.Label>
               <Form.Control
@@ -108,8 +83,15 @@ function Login() {
               />
             </Form.Group>
             <div className="text-center">
-              <Button type="submit" className="w-20 btn-dark">
-                Login
+              <Button type="submit" className="w-20 btn-dark" disabled={submitting}>
+                {submitting ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" className="me-2" />
+                    Logging in…
+                  </>
+                ) : (
+                  "Login"
+                )}
               </Button>
             </div>
           </Form>
