@@ -52,6 +52,10 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
+### v0.7.1 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Fixed:** The checkout form no longer rejects a valid mobile number written like "+63 917 123 4567".
+
 ### v0.7.0 (2026-09-24)
 _Integrated by Dan Leoncito._
 - **Added:** A real delivery address form at checkout (validated, saved with the order), and a "Deliver to" column on the customer's orders and the admin orders page.

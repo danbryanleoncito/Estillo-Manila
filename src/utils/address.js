@@ -13,7 +13,10 @@ export const EMPTY_ADDRESS = {
 };
 
 // HTML `pattern` values (the browser applies them to the fields).
-export const PHONE_PATTERN = "^(09|\\+639)[0-9 \\-]{9,14}$";
+// The phone pattern accepts the same numbers the server does: 09XXXXXXXXX or +639XXXXXXXXX, with
+// spaces or dashes anywhere ("+63 917 123 4567", "0917-123-4567"). The first version did not allow
+// a space after "+63", so a valid number typed that way was rejected by the form.
+export const PHONE_PATTERN = "^[\\s\\-]*(\\+[\\s\\-]*63|0)[\\s\\-]*9([\\s\\-]*[0-9]){9}[\\s\\-]*$";
 export const POSTAL_PATTERN = "^[0-9]{4}$";
 
 // An address as display lines, skipping anything blank. Orders placed before addresses were saved
