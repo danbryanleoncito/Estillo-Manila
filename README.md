@@ -52,6 +52,11 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
+### v0.7.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** A real delivery address form at checkout (validated, saved with the order), and a "Deliver to" column on the customer's orders and the admin orders page.
+- **Removed:** Checkout controls that did nothing (contact email, news opt-in, "save this information").
+
 ### v0.6.0 (2026-09-24)
 _Integrated by Dan Leoncito._
 - **Added:** A Retry state everywhere something loads (cart, checkout, products, search, profile, admin); an admin "needs attention" panel; "Refund processing" on lines whose refund is still going through; a clear sign-out when the server rejects the saved login.

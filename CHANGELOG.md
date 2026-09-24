@@ -2,6 +2,28 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.7.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- **Delivery address at checkout.** The checkout form is now a real Philippine address form (full name,
+  mobile number, street, optional apartment/unit, city, province, 4-digit postal code; the country is
+  fixed to the Philippines) that is validated by the browser before anything is sent and saved with the
+  order by the server. It goes with the Cash on Delivery order, or with the card payment when it is
+  created. Once a card has been charged the form is locked, because the address was saved with the payment.
+- **Deliver to** column on the customer's Profile orders and on the admin orders page (name, phone,
+  street, city, province, postal code). Orders placed before this release say "No address on file".
+- Tests for the checkout page: what COD and card send, that a retry after a charge sends no new
+  payment, and that a bad address is caught.
+
+### Removed
+- The checkout form's "Contact email", "Email me with news and offers" and "Save this information for
+  next time" controls. They did nothing.
+
+### Changed
+- **Deploy order:** the storefront must go live before backend 1.5.0, which refuses checkout without an
+  address. (A new storefront talking to the older backend simply has its address ignored.)
+
 ## [0.6.0] - 2026-09-24
 _Integrated by Dan Leoncito._
 
