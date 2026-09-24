@@ -1,4 +1,11 @@
-import { api, ApiError, errorMessage, isStockConflict } from "./api";
+import {
+  api,
+  ApiError,
+  errorMessage,
+  isNotFound,
+  isStockConflict,
+  SESSION_EXPIRED_EVENT,
+} from "./api";
 
 const respond = (status, body) => ({
   ok: status >= 200 && status < 300,
@@ -84,4 +91,58 @@ test("isStockConflict is false for other errors", () => {
   expect(isStockConflict(new ApiError(409, { message: "x" }, "x"))).toBe(false);
   expect(isStockConflict(new ApiError(500, { outOfStock: [] }, "x"))).toBe(false);
   expect(isStockConflict(new Error("x"))).toBe(false);
+});
+
+describe("session expiry", () => {
+  let expired;
+  beforeEach(() => {
+    expired = jest.fn();
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired);
+  });
+  afterEach(() => window.removeEventListener(SESSION_EXPIRED_EVENT, expired));
+
+  test("a rejected login (bad or expired token) raises the session-expired event", async () => {
+    localStorage.setItem("token", "old");
+    global.fetch.mockResolvedValue(respond(403, { auth: "Failed", message: "jwt expired" }));
+    await expect(api("/cart/get-cart")).rejects.toBeInstanceOf(ApiError);
+    expect(expired).toHaveBeenCalledTimes(1);
+  });
+
+  test("a 401 with no token on the server side also counts", async () => {
+    localStorage.setItem("token", "x");
+    global.fetch.mockResolvedValue(respond(401, { auth: "Failed. No Token" }));
+    await expect(api("/cart/get-cart")).rejects.toBeInstanceOf(ApiError);
+    expect(expired).toHaveBeenCalledTimes(1);
+  });
+
+  test("'Action Forbidden' (a customer calling an admin route) is not an expired session", async () => {
+    localStorage.setItem("token", "ok");
+    global.fetch.mockResolvedValue(respond(403, { auth: "Failed", message: "Action Forbidden" }));
+    await expect(api("/order/all-orders")).rejects.toBeInstanceOf(ApiError);
+    expect(expired).not.toHaveBeenCalled();
+  });
+
+  test("an unauthenticated call (login, product list) never raises it", async () => {
+    localStorage.setItem("token", "ok");
+    global.fetch.mockResolvedValue(respond(401, { message: "Email and password do not match" }));
+    await expect(api("/users/login", { method: "POST", auth: false, body: {} })).rejects.toBeInstanceOf(ApiError);
+    expect(expired).not.toHaveBeenCalled();
+  });
+
+  test("other failures (500, offline) never raise it", async () => {
+    localStorage.setItem("token", "ok");
+    global.fetch.mockResolvedValue(respond(500, { message: "boom" }));
+    await expect(api("/cart/get-cart")).rejects.toBeInstanceOf(ApiError);
+    global.fetch.mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(api("/cart/get-cart")).rejects.toMatchObject({ status: 0 });
+    expect(expired).not.toHaveBeenCalled();
+  });
+});
+
+test("isNotFound is true only for 404/400 answers, not for outages or server errors", () => {
+  expect(isNotFound(new ApiError(404, {}, "x"))).toBe(true);
+  expect(isNotFound(new ApiError(400, {}, "x"))).toBe(true);
+  expect(isNotFound(new ApiError(500, {}, "x"))).toBe(false);
+  expect(isNotFound(new ApiError(0, null, "offline"))).toBe(false);
+  expect(isNotFound(new Error("x"))).toBe(false);
 });

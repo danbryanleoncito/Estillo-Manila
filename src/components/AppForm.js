@@ -1,99 +1,51 @@
-import { Container, Row, Col, InputGroup, Form, Button } from "react-bootstrap";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { notyf } from "../utils/notify";
-import { useNavigate } from "react-router-dom";
+import { Container, Row, Col, InputGroup, Form, Button, Spinner } from "react-bootstrap";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { api } from "../utils/api";
+import { notyf, toastError } from "../utils/notify";
 
-
-console.log("Sending request to:", `${process.env.REACT_APP_API_BASE_URL}/users/register`);
+// Same rule the field's `pattern` enforces (the server has its own, looser one).
+const PASSWORD_PATTERN = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,20}$";
 
 export default function AppForm() {
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [mobileNo, setMobileNo] = useState(0);
+  const [mobileNo, setMobileNo] = useState("");
   const [image, setImage] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isActive, setIsActive] = useState(false);
   const [validated, setValidated] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  console.log(firstName);
-  console.log(lastName);
-  console.log(email);
-  console.log(mobileNo);
-  console.log(image);
-  console.log(password);
-  console.log(confirmPassword);
+  const passwordsDiffer = confirmPassword !== "" && confirmPassword !== password;
 
-  useEffect(() => {
-    if (
-      firstName !== "" &&
-      lastName !== "" &&
-      email !== "" &&
-      mobileNo !== "" &&
-      image !== "" &&
-      password !== "" &&
-      confirmPassword !== "" &&
-      password === confirmPassword &&
-      mobileNo.length === 11
-    ) {
-      setIsActive(true);
-    } else {
-      setIsActive(false);
-    }
-    //array of dependencies, the effect/side-effect/function will run when there are changes with our state
-  }, [
-    firstName,
-    lastName,
-    email,
-    image,
-    mobileNo,
-    password,
-    confirmPassword,
-    isActive,
-  ]);
-
-  function registerUser(e) {
+  async function registerUser(e) {
     e.preventDefault();
-    const formContent = e.currentTarget;
-    if (formContent.checkValidity() === false) {
-      e.preventDefault();
-      e.stopPropagation();
-    } else {
-      fetch(`${process.env.REACT_APP_API_BASE_URL}/users/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: firstName,
-          lastName: lastName,
-          email: email,
-          mobileNo: mobileNo,
-          image: image,
-          password: password,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-          if (data.message === "User registered successfully") {
-            console.log(data);
-            setFirstName("");
-            setLastName("");
-            setEmail("");
-            setMobileNo("");
-            setPassword("");
-            setConfirmPassword("");
-            navigate("/login");
-            notyf.success("Registration successful");
-          }
-        });
-    }
     setValidated(true);
+    if (submitting) return;
+    if (e.currentTarget.checkValidity() === false || password !== confirmPassword) {
+      e.stopPropagation();
+      if (password !== confirmPassword) notyf.error("The two passwords do not match");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api("/users/register", {
+        method: "POST",
+        auth: false,
+        body: { firstName, lastName, email: email.trim(), mobileNo, image, password },
+      });
+      notyf.success("Registration successful");
+      navigate("/login");
+    } catch (err) {
+      // e.g. "That email is already registered", or the server's password rule.
+      toastError(err);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -108,9 +60,7 @@ export default function AppForm() {
               type="text"
               placeholder="First name"
               value={firstName}
-              onChange={(e) => {
-                setFirstName(e.target.value);
-              }}
+              onChange={(e) => setFirstName(e.target.value)}
             />
             <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
           </Form.Group>
@@ -124,9 +74,7 @@ export default function AppForm() {
               type="text"
               placeholder="Last name"
               value={lastName}
-              onChange={(e) => {
-                setLastName(e.target.value);
-              }}
+              onChange={(e) => setLastName(e.target.value)}
             />
             <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
           </Form.Group>
@@ -140,12 +88,9 @@ export default function AppForm() {
               <Form.Control
                 type="email"
                 placeholder="Email"
-                aria-describedby="inputGroupPrepend"
                 required
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                }}
+                onChange={(e) => setEmail(e.target.value)}
               />
               <Form.Control.Feedback type="invalid">
                 Please input proper email.
@@ -163,28 +108,22 @@ export default function AppForm() {
               required
               pattern="^09[0-9]{9}$"
               value={mobileNo}
-              onChange={(e) => {
-                setMobileNo(e.target.value);
-              }}
+              onChange={(e) => setMobileNo(e.target.value)}
             />
             <Form.Control.Feedback type="invalid">
-              Please provide a valid mobile number.
+              Please provide a valid mobile number (11 digits, starting with 09).
             </Form.Control.Feedback>
           </Form.Group>
         </Row>
         <Row className="mb-3 justify-content-md-center">
           <Form.Group as={Col} md="6" controlId="image">
-            <Form.Label>Upload Avatar:</Form.Label>
+            <Form.Label>Avatar image link (optional):</Form.Label>
             <Form.Control
               type="text"
+              placeholder="https://…"
               value={image}
-              onChange={(e) => {
-                setImage(e.target.value);
-              }}
+              onChange={(e) => setImage(e.target.value)}
             />
-            <Form.Control.Feedback type="invalid">
-              Please provide an accepted file type.
-            </Form.Control.Feedback>
           </Form.Group>
         </Row>
 
@@ -196,19 +135,16 @@ export default function AppForm() {
               placeholder="Password"
               aria-describedby="passwordHelpBlock"
               required
-              pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,20}$"
+              pattern={PASSWORD_PATTERN}
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-              }}
+              onChange={(e) => setPassword(e.target.value)}
             />
             <Form.Control.Feedback type="invalid">
               Please provide a valid password.
             </Form.Control.Feedback>
-            <Form.Text muted>
-              Your password must be 8-20 characters long, contain letters and
-              numbers, and must not contain spaces, special characters, or
-              emoji.
+            <Form.Text muted id="passwordHelpBlock">
+              8-20 characters with a lowercase letter, an uppercase letter, a number and one of
+              @ $ ! % * ? &amp; #. No spaces or emoji.
             </Form.Text>
           </Form.Group>
         </Row>
@@ -219,20 +155,12 @@ export default function AppForm() {
             <Form.Control
               type="password"
               placeholder="Password"
-              aria-describedby="passwordHelpBlock"
               required
-              pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,20}$"
+              isInvalid={passwordsDiffer}
               value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-              }}
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
-            <Form.Control.Feedback type="invalid">
-              Password Do Not Match.
-            </Form.Control.Feedback>
-            <Form.Text muted>
-              Your password must be the same as above.
-            </Form.Text>
+            <Form.Control.Feedback type="invalid">Passwords do not match.</Form.Control.Feedback>
           </Form.Group>
         </Row>
 
@@ -249,8 +177,15 @@ export default function AppForm() {
 
         <Row className="mb-3 justify-content-md-center">
           <Col md={6}>
-            <Button type="submit" className="btn btn-dark text-white">
-              Sign Up
+            <Button type="submit" className="btn btn-dark text-white" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" className="me-2" />
+                  Signing up…
+                </>
+              ) : (
+                "Sign Up"
+              )}
             </Button>
           </Col>
         </Row>

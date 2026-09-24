@@ -2,6 +2,90 @@
 
 All notable changes to this frontend are documented in this file.
 
+## [0.6.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- A **Retry** state (`LoadError`) wherever something loads: the cart, checkout, product page, home
+  featured products, search, profile, admin products and admin orders. A failed request no longer
+  looks like "nothing here".
+- Admin orders show a **"needs attention"** panel from the new backend incidents list (refunds that
+  keep failing, stuck disputes, payments with no order).
+- Profile and admin orders show **Refund processing** on a line whose customer already chose but
+  whose refund has not gone through yet.
+- Signing out on an invalid or expired login: the server rejecting the saved login now signs the user
+  out once with one clear message, instead of a "Failed" toast on every request.
+
+### Fixed
+- **Login:** a wrong password said "<email> does not exist"; it now says "Incorrect email or password"
+  (the same message for an unknown email). Network failures were silent. The login token was written to
+  the browser console.
+- **Register:** the password and confirmation were written to the console on every keystroke; server
+  refusals (duplicate email, weak password) were ignored; the password hint contradicted the rules.
+  Errors are now shown, the two passwords are compared, and the avatar link is marked optional.
+- **Cart:** a cart that failed to load said "Your cart is empty"; refresh failures were swallowed in
+  three places; a change that was saved but could not be refreshed was reported as a failure (so it
+  could be repeated). Checkout no longer says "cart is empty" or "items unavailable" when the cart
+  simply did not load.
+- **Page refresh while the server is unreachable** sent a logged-in user to `/login`; it now keeps the
+  login and offers Retry.
+- **Product page** said "Product not found" for every failure; only a 404/400 does now. A failed
+  background refresh no longer replaces a working page.
+- **Search** showed "No products found" when the search itself failed.
+- Duplicate `id`s per cart row, `class` instead of `className` in the navbar, and a checkout form that
+  defaulted to United Arab Emirates for a Manila store (now Philippines / Province).
+
+## [0.5.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- Orders now show product names, quantity, price per item and a status per line (Fulfilled,
+  Needs your decision, Quantity adjusted, Cancelled) instead of raw product ids. Orders placed
+  before names were stored look the name up from the product. Shows how much was refunded.
+- Shortfall disputes: when a paid item was only partly in stock, Profile shows a banner with the
+  deadline and a **Resolve** button. The dialog lets the customer cancel the item or keep fewer
+  than were held, with a live preview of the refund. An already-resolved dispute refreshes the
+  page instead of erroring, and a refund that is still processing is reported as such.
+- Admin orders show the same lines and an **Open dispute** badge (view only; only the customer
+  can resolve).
+- The notice sent by checkout when an order opens a dispute is shown (and can be dismissed).
+
+### Fixed
+- The order tables showed the customer id and raw product ids, crashed on unexpected responses,
+  and repeated the payment badge logic; they now share one set of badges and load safely (no
+  orders yet is an empty state, newest first).
+- A lint error in the ProductCard test.
+
+## [0.4.0] - 2026-09-24
+_Integrated by Dan Leoncito._
+
+### Added
+- Stock is now visible everywhere. Product cards (home, products, search) show a **Sold out** badge
+  and a dimmed card at 0 stock and **Only N left** at 5 or fewer; sold-out products stay visible and
+  openable. Featured products on the home page prefer items that are in stock. One shared
+  `ProductCard` replaces the two duplicated card components (which also nested links inside links).
+- Product page: shows sold out / low stock / no longer available, limits the quantity to what is
+  actually available (live stock, capped at 99, minus what is already in your cart), says how many
+  you already have in your cart, and shows "Sold out" / "Max in cart" on a disabled button.
+- Cart page: each line shows "Sold out", "Only N available" (with a one-click **Reduce to N**) or a
+  low-stock note; Checkout is disabled, with the reason, until the cart can actually be bought; a
+  real empty state and a message for items whose product was deleted.
+- Checkout: an order summary; when items are no longer available (before paying, or after) it
+  lists exactly which ones and how many are left, and refreshes the cart. If a card is charged but
+  the order cannot be finished, the page says so and offers **Finish my order**, which only retries
+  the order and can never create a second charge. An order that opens a shortfall dispute sends the
+  customer to Profile with a notice.
+- Admin: a **Stock** column (with Sold out / Low stock badges) and a Stock field when adding a
+  product.
+
+### Fixed
+- Admin saves sent the whole product, so editing a name overwrote live `stock` with the value from
+  when the page loaded (erasing sales made since). It now sends only the fields that were changed.
+- Admin edit handlers wrote a junk `"undefined"` field; the availability switch used stale global
+  state (always archiving); toasts said "updated" / "added" even when the server refused. All fixed;
+  failures now show the server's message (e.g. "Product Already Exists").
+- Removed the dashboard's delete button, which had no action.
+
 ## [0.3.0] - 2026-09-24
 _Integrated by Dan Leoncito._
 

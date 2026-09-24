@@ -65,3 +65,17 @@ test("admin routes send a non-admin home, and let an admin in", () => {
   );
   expect(screen.getByText("admin only")).toBeInTheDocument();
 });
+
+test("when the saved login could not be checked (server unreachable) it offers Retry instead of redirecting", () => {
+  const retryAuth = jest.fn();
+  renderAt(
+    { user: { id: null, isAdmin: null }, authReady: true, authError: "offline", retryAuth },
+    <RequireAuth>
+      <div>secret</div>
+    </RequireAuth>
+  );
+  expect(screen.queryByText("login page")).not.toBeInTheDocument();
+  expect(screen.getByText(/cannot reach the server/i)).toBeInTheDocument();
+  screen.getByRole("button", { name: "Retry" }).click();
+  expect(retryAuth).toHaveBeenCalled();
+});

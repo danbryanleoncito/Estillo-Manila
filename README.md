@@ -52,6 +52,21 @@ Create React App bakes `REACT_APP_*` values in at **build time**. After changing
 
 Full history is in [CHANGELOG.md](CHANGELOG.md). Summary:
 
+### v0.6.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** A Retry state everywhere something loads (cart, checkout, products, search, profile, admin); an admin "needs attention" panel; "Refund processing" on lines whose refund is still going through; a clear sign-out when the server rejects the saved login.
+- **Fixed:** Wrong-password login said the email did not exist; the login token and registration passwords were written to the console; failed loads showed as "empty cart" / "Product not found" / "No products found"; a refresh while the server was unreachable logged the user out; registration errors were ignored.
+
+### v0.5.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** Readable orders (names, quantities, prices, per-line status, refunds) for customers and admins, and shortfall disputes: a banner and Resolve dialog where a customer cancels an item or keeps fewer, with a live refund preview.
+- **Fixed:** Order tables no longer show raw ids or break on empty or unexpected responses.
+
+### v0.4.0 (2026-09-24)
+_Integrated by Dan Leoncito._
+- **Added:** Stock across the storefront: Sold out and Only N left badges, a quantity limit on the product page, stock-aware cart lines with one-click fixes, a clear list of unavailable items at checkout, a safe "Finish my order" retry after a successful charge, and a Stock column and field for admins.
+- **Fixed:** Editing a product in the admin dashboard no longer overwrites its live stock; the availability switch and admin toasts now reflect what the server actually did.
+
 ### v0.3.0 (2026-09-24)
 _Integrated by Dan Leoncito._
 - **Added:** A shared API helper that keeps the server's error details (such as stock conflicts), a shared cart that keeps the navbar badge and cart page in sync, route guards for the cart, checkout, profile and admin pages, and tests for them.
