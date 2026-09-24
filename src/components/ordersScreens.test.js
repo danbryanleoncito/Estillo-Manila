@@ -155,6 +155,28 @@ describe("profile", () => {
     expect(screen.queryByRole("button", { name: "Resolve" })).not.toBeInTheDocument();
   });
 
+  test("shows where each order is being delivered, and says so for an order with no address", async () => {
+    mockFetch([
+      ...profileRoutes,
+      [
+        "GET /order/my-orders",
+        () =>
+          reply(200, {
+            orders: [
+              order({ _id: "o-new", productsOrdered: [], shippingAddress: { fullName: "Ada Lovelace", phone: "09171234567", addressLine1: "12 Rizal Street", addressLine2: "Unit 4B", city: "Makati", province: "Metro Manila", postalCode: "1200", country: "Philippines" } }),
+              order({ _id: "o-old", orderedOn: "2020-01-01T00:00:00Z", productsOrdered: [] }),
+            ],
+          }),
+      ],
+      ["GET /order/disputes", () => reply(200, { disputes: [] })],
+    ]);
+    renderProfile();
+    expect(await screen.findByText("12 Rizal Street")).toBeInTheDocument();
+    expect(screen.getByText("Unit 4B")).toBeInTheDocument();
+    expect(screen.getByText("Makati, Metro Manila, 1200")).toBeInTheDocument();
+    expect(screen.getByText("No address on file")).toBeInTheDocument();
+  });
+
   test("an open dispute still offers Resolve", async () => {
     mockFetch([
       ...profileRoutes,
@@ -236,6 +258,19 @@ describe("admin orders", () => {
     renderAdmin();
     expect(await screen.findByText("Refund processing")).toBeInTheDocument();
     expect(screen.queryByText("Needs your decision")).not.toBeInTheDocument();
+  });
+
+  test("shows the delivery address (name, phone, street, city) so an order can be sent out", async () => {
+    mockFetch([
+      ["GET /order/all-orders", () => reply(200, { orders: [order({ productsOrdered: [], shippingAddress: { fullName: "Ada Lovelace", phone: "09171234567", addressLine1: "12 Rizal Street", addressLine2: "Unit 4B", city: "Makati", province: "Metro Manila", postalCode: "1200", country: "Philippines" } })] })],
+      ["GET /order/disputes/all", () => reply(200, { disputes: [] })],
+      ["GET /order/incidents", () => reply(200, { incidents: [] })],
+    ]);
+    renderAdmin();
+    expect(await screen.findByText("Ada Lovelace")).toBeInTheDocument();
+    expect(screen.getByText("09171234567")).toBeInTheDocument();
+    expect(screen.getByText("12 Rizal Street")).toBeInTheDocument();
+    expect(screen.getByText("Makati, Metro Manila, 1200")).toBeInTheDocument();
   });
 
   test("a backend that predates incidents (404) is not an error", async () => {
